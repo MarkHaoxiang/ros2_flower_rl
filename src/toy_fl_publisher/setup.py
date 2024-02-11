@@ -15,11 +15,12 @@ setup(
     zip_safe=True,
     maintainer='markhaoxiang',
     maintainer_email='mark.haoxiang@gmail.com',
-    description='TODO: Package description',
+    description='Publishes toy federated learning datasets as a simulated sensor',
     license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'talker = toy_fl_publisher.main:main'
         ],
     },
 )

@@ -1,3 +1,4 @@
+rosdep install -i --from-path src --rosdistro humble -y
 colcon build
 
 source venv/bin/activate
