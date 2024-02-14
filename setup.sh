@@ -5,13 +5,12 @@ rosdep install -i --from-path src --rosdistro humble -y
 # Venv
 if ! [ -d "venv" ]; then
   python3 -m venv venv  --system-site-packages --symlinks
+  touch ./venv/COLCON_IGNORE
+  pip install -r requirements.txt
 fi
 source venv/bin/activate
 
 # Project workspace
-colcon build --cmake-args -DPython3_EXECUTABLE="venv/bin/python"
+colcon build
 source install/local_setup.bash
-
-# Replace with local venv
-export PYTHON_PATH='/home/markhaoxiang/Projects/fl/ros2_flower_rl/venv/lib/python3.11/site-packages'
 
