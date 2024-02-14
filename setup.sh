@@ -11,6 +11,5 @@ fi
 source venv/bin/activate
 
 # Project workspace
-colcon build
 source install/local_setup.bash
-
+colcon build
