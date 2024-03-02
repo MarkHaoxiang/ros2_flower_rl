@@ -23,6 +23,7 @@ endif()
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/FloatTensor.msg"
+  "msg/FeatureLabelPair.msg"
 )
 
 ament_package()

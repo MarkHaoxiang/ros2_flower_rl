@@ -1,1 +1,1 @@
-from .lib import FloatTensor
+from .lib import FloatTensor, FeatureLabelPair

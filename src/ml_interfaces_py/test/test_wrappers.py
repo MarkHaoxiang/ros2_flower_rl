@@ -12,10 +12,12 @@ class TestFloatTensor:
     def test_construction(self, shape: Sequence[int]):
         # Numpy
         a: np.ndarray = np.random.rand(shape=shape)
-        a_ = FloatTensor.from_numpy(a)
+        a_ = FloatTensor.build(a)
         assert np.array(a_.values) == a.flatten()
 
         # Torch
         b = torch.rand(size=shape)
-        b_ = FloatTensor.from_torch(b)
+        b_ = FloatTensor.build(b)
         assert torch.tensor(b_.values()) == b.flatten()
+
+# TODO: Test for FeatureLabelPair
