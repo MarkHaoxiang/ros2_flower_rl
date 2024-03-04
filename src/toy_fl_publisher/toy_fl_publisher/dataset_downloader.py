@@ -6,8 +6,10 @@ from rclpy import logging
 from rospkg import get_ros_home
 from flwr_datasets import FederatedDataset
 
+
 def generate_partition_path(dataset_dir, name, cid):
     return os.path.join(dataset_dir, f"{name}_{cid}.hf")
+
 
 class DatasetDownloader(Node):
 
@@ -17,8 +19,12 @@ class DatasetDownloader(Node):
         self.declare_parameter("experiment_dataset", "mnist")
         self.declare_parameter("n_partitions", 10)
 
-        experiment_dataset = self.get_parameter("experiment_dataset").get_parameter_value().string_value
-        n_partitions = self.get_parameter("n_partitions").get_parameter_value().integer_value
+        experiment_dataset = (
+            self.get_parameter("experiment_dataset").get_parameter_value().string_value
+        )
+        n_partitions = (
+            self.get_parameter("n_partitions").get_parameter_value().integer_value
+        )
 
         dataset_dir = os.path.join(get_ros_home(), "fl_data")
         dataset_dir = os.path.join(dataset_dir, experiment_dataset)
@@ -28,24 +34,35 @@ class DatasetDownloader(Node):
         # Check if previously cached
         rebuild = False
         for i in range(n_partitions):
-            if not os.path.exists(generate_partition_path(dataset_dir, experiment_dataset, i)):
+            if not os.path.exists(
+                generate_partition_path(dataset_dir, experiment_dataset, i)
+            ):
                 rebuild = True
-        if os.path.exists(generate_partition_path(dataset_dir, experiment_dataset, n_partitions)):
+        if os.path.exists(
+            generate_partition_path(dataset_dir, experiment_dataset, n_partitions)
+        ):
             rebuild = True
 
         # Download and save dataset
         if rebuild:
             shutil.rmtree(dataset_dir)
             os.makedirs(dataset_dir)
-            fds = FederatedDataset(dataset=experiment_dataset, partitioners={"train": n_partitions})
+            fds = FederatedDataset(
+                dataset=experiment_dataset, partitioners={"train": n_partitions}
+            )
             for i in range(n_partitions):
                 partition = fds.load_partition(i, "train")
-                partition.save_to_disk(dataset_path=generate_partition_path(dataset_dir, experiment_dataset, i))
+                partition.save_to_disk(
+                    dataset_path=generate_partition_path(
+                        dataset_dir, experiment_dataset, i
+                    )
+                )
         else:
             self.get_logger().info("No updates applied")
-        
+
         # Shutdown
         raise SystemExit
+
 
 def main(args=None):
     rclpy.init(args=args)
@@ -57,5 +74,6 @@ def main(args=None):
     node.destroy_node()
     rclpy.shutdown()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

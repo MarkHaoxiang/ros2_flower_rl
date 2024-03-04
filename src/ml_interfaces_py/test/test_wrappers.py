@@ -6,9 +6,10 @@ import torch
 
 from ml_interfaces_py.lib import FloatTensor
 
+
 class TestFloatTensor:
 
-    @pytest.parametrize("shape", [(1,), (2,3)])
+    @pytest.parametrize("shape", [(1,), (2, 3)])
     def test_construction(self, shape: Sequence[int]):
         # Numpy
         a: np.ndarray = np.random.rand(shape=shape)
@@ -19,5 +20,6 @@ class TestFloatTensor:
         b = torch.rand(size=shape)
         b_ = FloatTensor.build(b)
         assert torch.tensor(b_.values()) == b.flatten()
+
 
 # TODO: Test for FeatureLabelPair

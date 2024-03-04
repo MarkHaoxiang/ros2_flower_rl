@@ -1,15 +1,16 @@
+from os import path
+from datetime import datetime
+
 import rclpy
 from rclpy.node import Node, Subscription
-from ml_interfaces_py.lib import FeatureLabelPair
 from typing import List, Tuple, Optional
 
 import torch
 from torch import Tensor
-from os import path
-from datatime import datetime
-
-from flwr_client import RosClient
 import flwr as fl
+
+from ml_interfaces_py import FeatureLabelPair
+from .flwr_client import RosClient
 
 
 def _raise(ex: Exception):
@@ -47,8 +48,9 @@ class FlowerSubscriber(Node):
         self.nid: int = FlowerSubscriber.count
         self.subscription: Subscription = self.create_subscription(
             msg_type=msg_type,
-            topic="test_tensor_topic",
+            topic="data_stream",
             callback=self.listener_callback,
+            qos_profile=10,
         )
         self.flower_hook_fn: RosClient.flower_hook_t = flower_hook_fn
         self.data_package_limit: int = data_package_limit

@@ -1,17 +1,19 @@
-from fl_subscriber import FlowerSubscriber
-from flwr import Client
+from __future__ import annotations
+
 from typing import List, Dict, Tuple, Any, Callable
+from warnings import warn
 
 import torch
-
 from torch import Tensor, nn
 from torch.nn import Module
 from torch.utils.data import DataLoader
-
-from tqdm import tqdm
 from collections import OrderedDict
+from flwr.client import Client
 
-from warnings import warn
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .fl_subscriber import FlowerSubscriber
 
 
 class MnistClassifier(Module):
@@ -116,7 +118,7 @@ class RosClient(Client):
         optim = torch.optim.Adam(net.parameters())
 
         losses = []
-        for epoch in tqdm(range(10)):
+        for epoch in range(10):
             c = 0
             for batch in train_dataloader:
                 c += 1

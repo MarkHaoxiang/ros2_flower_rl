@@ -49,7 +49,7 @@ def main():
     )
 
     fl.server.start_server(
-        server="0.0.0.0:8080",
+        server_address="0.0.0.0:8080",
         config=fl.server.ServerConfig(num_rounds=10),
         strategy=strategy
     )

@@ -96,5 +96,3 @@ def generate_launch_description():
             subscriber_nodes,
         ]
     )
-
-    return LaunchDescription([])
