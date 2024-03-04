@@ -52,7 +52,7 @@ class RosClient(Client):
     def __init__(
         self, cid: int, subscriber_node: FlowerSubscriber, entries_per_package: int
     ):
-        super.__init__(self)
+        super().__init__()
         self.cid: int = cid
         self.net: Module = MnistClassifier()
         self.entries_per_package: int = entries_per_package

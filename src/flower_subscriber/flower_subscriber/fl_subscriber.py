@@ -55,13 +55,14 @@ class FlowerSubscriber(Node):
         self.flower_hook_fn: RosClient.flower_hook_t = flower_hook_fn
         self.data_package_limit: int = data_package_limit
         self.feature_label_pairs: List[Tuple[Tensor, Tensor]] = []
+        client = RosClient(
+            cid=self.nid,
+            subscriber_node=self,
+            entries_per_package=self.data_package_limit,
+        )
         fl.client.start_client(
             server_address="[::]:8080",
-            client_fn=lambda: RosClient(
-                cid=self.nid,
-                subscriber_node=self,
-                entries_per_package=self.data_package_limit,
-            ).to_client(),
+            client=client,
             insecure=True,
         )
 
