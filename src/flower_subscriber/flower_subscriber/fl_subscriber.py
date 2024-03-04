@@ -1,12 +1,17 @@
 # import rclpy
-from rclpy.node import Node
-from ml_interfaces_py.lib import FloatTensor, FeatureLabelPair
-from typing import Callable, List, Tuple, Optional
+from rclpy.node import Node, Subscription
+from ml_interfaces_py.lib import FeatureLabelPair
+from typing import List, Tuple, Optional
 
 import torch
 from torch import Tensor
 from os import path
 from datatime import datetime
+
+from flwr_client import RosClient
+import flwr as fl
+
+# Simple id counter to assign unique id for each node
 
 
 def _raise(ex: Exception):
@@ -20,32 +25,33 @@ class FlowerSubscriber(Node):
     communicates with the flower client via a hook function
     """
 
-    flower_hook_t = Callable[str]
-    flower_hook: flower_hook_t
-    feature_label_pairs: List[Tuple[Tensor, Tensor]] = []
-    package_size: int = 0
-    data_package_limit: int = 100  # 100 training samples per batch
-    data_folder: str = path.join(path.dirname(path.abspath(__file__)), "data")
+    count: int = 0  # Global ID count-up
 
     def __init__(
         self,
-        flower_hook_fn: Optional[Callable] = lambda: _raise(
+        flower_hook_fn: Optional[RosClient.flower_hook_t] = lambda _: _raise(
             NotImplementedError
         ),  # Default to raise NotImplemented
         msg_type=FeatureLabelPair,
         data_package_limit: int = 100,
     ):
         super().__init__("flower_subscriber")
-        self.subscriptions = self.create_subscription(
+        FlowerSubscriber.count += 1
+        self.nid: int = FlowerSubscriber.count
+        self.subscription: Subscription = self.create_subscription(
             msg_type=msg_type,
             topic="test_tensor_topic",
             callback=self.listener_callback,
         )
-        self.subscription
-        self.external_callback = flower_hook_fn
-        self.data_package_limit = data_package_limit
+        self.flower_hook_fn: RosClient.flower_hook_t = flower_hook_fn
+        self.data_package_limit: int = data_package_limit
+        self.feature_label_pairs: List[Tuple[Tensor, Tensor]] = []
+        fl.client.start_client(
+            server_address="[::]:8080",
+            client=RosClient(self.nid, self, self.data_package_limit).to_client(),
+        )
 
-    def set_flower_hook(self, flower_hook_fn: flower_hook_t):
+    def set_flower_hook(self, flower_hook_fn: RosClient.flower_hook_t):
         """
         Changes flower hook function
         """
