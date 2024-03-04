@@ -1,4 +1,4 @@
-# import rclpy
+import rclpy
 from rclpy.node import Node, Subscription
 from ml_interfaces_py.lib import FeatureLabelPair
 from typing import List, Tuple, Optional
@@ -10,8 +10,6 @@ from datatime import datetime
 
 from flwr_client import RosClient
 import flwr as fl
-
-# Simple id counter to assign unique id for each node
 
 
 def _raise(ex: Exception):
@@ -35,6 +33,15 @@ class FlowerSubscriber(Node):
         msg_type=FeatureLabelPair,
         data_package_limit: int = 100,
     ):
+        """
+        ROS node which subscribes to a data source, batch up the data
+        and pass to a flower client for FL
+
+        Parameters:
+            flower_hook_fn: Optional[RosClient.flower_hook_t] a hook function passing data to the flower client
+            msg_type: ROS message type broadcasted by the flower server
+            data_package_limit: int  The number of data entries the subscriber node will put into a pb file for storage
+        """
         super().__init__("flower_subscriber")
         FlowerSubscriber.count += 1
         self.nid: int = FlowerSubscriber.count
@@ -48,7 +55,12 @@ class FlowerSubscriber(Node):
         self.feature_label_pairs: List[Tuple[Tensor, Tensor]] = []
         fl.client.start_client(
             server_address="[::]:8080",
-            client=RosClient(self.nid, self, self.data_package_limit).to_client(),
+            client_fn=lambda: RosClient(
+                cid=self.nid,
+                subscriber_node=self,
+                entries_per_package=self.data_package_limit,
+            ).to_client(),
+            insecure=True,
         )
 
     def set_flower_hook(self, flower_hook_fn: RosClient.flower_hook_t):
@@ -84,3 +96,15 @@ class FlowerSubscriber(Node):
 
             self.feature_label_pairs.clear()
         self.feature_label_pairs.append(msg.torch())
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = FlowerSubscriber()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()
