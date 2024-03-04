@@ -1,4 +1,4 @@
-import os
+import os, shutil
 
 import rclpy
 from rclpy.node import Node
@@ -23,7 +23,6 @@ class DatasetDownloader(Node):
         dataset_dir = os.path.join(get_ros_home(), "fl_data")
         dataset_dir = os.path.join(dataset_dir, experiment_dataset)
         if not os.path.exists(dataset_dir):
-            self.get_logger().info("A")
             os.makedirs(dataset_dir)
 
         # Check if previously cached
@@ -36,6 +35,8 @@ class DatasetDownloader(Node):
 
         # Download and save dataset
         if rebuild:
+            shutil.rmtree(dataset_dir)
+            os.makedirs(dataset_dir)
             fds = FederatedDataset(dataset=experiment_dataset, partitioners={"train": n_partitions})
             for i in range(n_partitions):
                 partition = fds.load_partition(i, "train")

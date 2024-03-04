@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'downloader = toy_fl_publisher.dataset_downloader:main'
+            'downloader = toy_fl_publisher.dataset_downloader:main',
+            'publisher = toy_fl_publisher.dataset_publisher:main',
         ],
     },
 )
