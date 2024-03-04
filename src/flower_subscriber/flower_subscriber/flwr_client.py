@@ -73,16 +73,7 @@ class RosClient(fl.client.Client):
         self.subscriber_node.set_flower_hook(
             lambda training_data: self.training_data_dirs.append(training_data)
         )
-
-        def get_device() -> str:
-            device = "cpu"
-            if torch.cuda.is_available():
-                device = "cuda"
-            elif torch.backends.mps.is_available() and torch.backends.mps.is_built():
-                device = "mps"
-            return device
-
-        self.device = get_device()
+        self.device = "cuda" if torch.cuda.is_available() else "cpu" 
 
     def _get_train_dataloader(self, config: Dict[str, Any]) -> DataLoader:
         """Generates the train set dataloader from currently received data
