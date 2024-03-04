@@ -1,4 +1,3 @@
-import rclpy
 from rclpy.node import Node
 
 from datasets import Dataset
@@ -6,9 +5,6 @@ import torch
 
 import ml_interfaces.msg as msg
 from ml_interfaces_py import FeatureLabelPair
-
-# Temp
-from flwr_datasets import FederatedDataset
 
 class DatasetPublisher(Node):
     """ Publishes a Huggingface dataset on a topic
@@ -38,19 +34,3 @@ class DatasetPublisher(Node):
         y: torch.Tensor = data[self.label_identifier].to(torch.float32)
         msg = FeatureLabelPair.build(X, y)
         self.publisher_.publish(msg.pack()) 
-
-def main(args=None):
-    rclpy.init(args=args)
-
-    # TODO: This should be managed in the launch file
-    fds = FederatedDataset(dataset="cifar10", partitioners={"train": 10})
-    partition = fds.load_partition(0, "train")
-
-    dataset_publisher = DatasetPublisher("test", partition)
-    rclpy.spin(dataset_publisher)
-    dataset_publisher.destroy_node()
-    rclpy.shutdown()
-
-
-if __name__ == '__main__':
-    main()
