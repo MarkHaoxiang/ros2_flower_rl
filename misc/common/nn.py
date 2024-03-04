@@ -18,7 +18,7 @@ class MnistClassifier(nn.Module):
         )
         self.flatten = nn.Flatten(start_dim=-3, end_dim=-1)
         self.mlp = nn.Sequential(
-            nn.LazyLinear(out_features=32),
+            nn.Linear(in_features=20736, out_features=32),
             nn.LeakyReLU(),
             nn.Linear(in_features=32, out_features=10)
         )
@@ -28,5 +28,6 @@ class MnistClassifier(nn.Module):
         x = x.to(torch.float32)
         x = self.conv(x)
         x = self.flatten(x)
+        print(x.shape)
         x = self.mlp(x)
         return x

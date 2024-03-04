@@ -8,13 +8,25 @@ from torch import Tensor, nn
 from torch.nn import Module
 from torch.utils.data import DataLoader
 from collections import OrderedDict
-from flwr.client import Client
+import flwr as fl
+from flwr.common.typing import (
+    Parameters,
+    GetParametersIns,
+    GetParametersRes,
+    Config,
+    Status,
+    Code,
+    FitIns,
+    FitRes,
+    EvaluateIns,
+    EvaluateRes,
+    Scalar
+)
 
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .fl_subscriber import FlowerSubscriber
-
 
 class MnistClassifier(Module):
     """This class defines a basic convolutional neural nework"""
@@ -33,7 +45,7 @@ class MnistClassifier(Module):
         )
         self.flatten = nn.Flatten(start_dim=-3, end_dim=-1)
         self.mlp = nn.Sequential(
-            nn.LazyLinear(out_features=32),
+            nn.Linear(in_features=20736, out_features=32),
             nn.LeakyReLU(),
             nn.Linear(in_features=32, out_features=10),
         )
@@ -46,7 +58,7 @@ class MnistClassifier(Module):
         return x
 
 
-class RosClient(Client):
+class RosClient(fl.client.Client):
     flower_hook_t = Callable[[str], None]
 
     def __init__(
@@ -103,12 +115,20 @@ class RosClient(Client):
 
         return DataLoader(trainset, batch_size=batch_size)
 
-    def fit(self, config: Dict[str, Any]) -> Module:
+    def fit(self, ins: FitIns) -> FitRes:
         net = self.net
         net.to(self.device)
-        train_loader = self._get_train_dataloader(config)
-        self._train(net, train_dataloader=train_loader, config=config)
-        return net
+        # train_loader = self._get_train_dataloader(ins.config)
+        # self._train(net, train_dataloader=train_loader, config=ins.config)
+        return FitRes(
+            status=Status(
+                Code.OK,
+                message=""
+            ),
+            num_examples=1,
+            parameters=self.get_parameters(GetParametersIns(config=ins.config)),
+            metrics= {}
+        )
 
     def _train(self, net: Module, train_dataloader: DataLoader, config: Dict[str, Any]):
         # Train the Classifier
@@ -118,15 +138,9 @@ class RosClient(Client):
         optim = torch.optim.Adam(net.parameters())
 
         losses = []
-        for epoch in range(10):
-            c = 0
+        for _ in range(10):
             for batch in train_dataloader:
-                c += 1
-                if c > 50:
-                    break
                 X, y = batch["image"], batch["label"]
-                # Normalisation step
-                X = (X / 256).unsqueeze(-3)
                 # Predict Labels
                 py = net(X)
                 # Loss
@@ -137,10 +151,16 @@ class RosClient(Client):
                 losses.append(loss.item())
                 optim.step()
 
-    def get_parameters(self, config):
-        return [val.cpu().numpy() for _, val in self.net.state_dict().items()]
+    def get_parameters(self, ins: GetParametersIns) -> GetParametersRes:
+        return GetParametersRes(
+            status=Status(code=Code.OK, message=""),
+            parameters=fl.common.ndarrays_to_parameters(
+                [val.cpu().numpy() for _, val in self.net.state_dict().items()]
+            )
+        )
 
-    def set_parameters(self, parameters):
-        params_dict = zip(self.net.state_dict().keys(), parameters)
+    def set_parameters(self, parameters: Parameters) -> None:
+        nd_arrays = fl.common.parameters_to_ndarrays(parameters)
+        params_dict = zip(self.net.state_dict().keys(), nd_arrays)
         state_dict = OrderedDict({k: torch.tensor(v) for k, v in params_dict})
         self.net.load_state_dict(state_dict, strict=True)
