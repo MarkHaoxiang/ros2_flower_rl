@@ -5,7 +5,7 @@ import flwr as fl
 from flwr.common import NDArrays
 from florl.common.util import aggregate_weighted_average, set_torch_parameters
 
-from common.nn import MnistClassifier
+from toy_fl.nn import MnistClassifier
 
 DATASET = "mnist"
 

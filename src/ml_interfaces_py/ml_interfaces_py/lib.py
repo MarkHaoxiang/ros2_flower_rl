@@ -8,7 +8,6 @@ import ml_interfaces.msg as msg
 # Typing utility
 Tensor = torch.Tensor | np.ndarray
 
-
 class FeatureLabelPair(msg.FeatureLabelPair):
     """A wrapper around the FeatureLabelPair msg with utilities"""
 
@@ -31,6 +30,13 @@ class FeatureLabelPair(msg.FeatureLabelPair):
         if not isinstance(label, FloatTensor):
             label = FloatTensor.build(label)
         return FeatureLabelPair(feature=feature, label=label)
+    
+    @staticmethod
+    def unpack(msg: msg.FeatureLabelPair):
+        return FeatureLabelPair(
+            feature=FloatTensor.unpack(msg.feature),
+            label=FloatTensor.unpack(msg.label)
+        )
 
     def torch(self, **kwargs):
         return (self.feature.torch(**kwargs), self.label.torch(**kwargs))
@@ -69,6 +75,13 @@ class FloatTensor(msg.FloatTensor):
             return FloatTensor(shape=list(data.shape), values=data.flatten().tolist())
         else:
             raise NotImplementedError
+    
+    @staticmethod
+    def unpack(msg: msg.FloatTensor) -> FloatTensor:
+        return FloatTensor(
+            shape=msg.shape,
+            values=msg.values
+        )
 
     def torch(self, **kwargs) -> torch.Tensor:
         """Converts to torch tensor.
@@ -77,7 +90,7 @@ class FloatTensor(msg.FloatTensor):
             torch.Tensor: result.
         """
         tensor = torch.tensor(data=self.values, dtype=torch.float32, **kwargs)
-        tensor = tensor.reshape(self.shape)
+        tensor = tensor.reshape(self.shape.tolist())
         return tensor
 
     def numpy(self, **kwargs) -> np.ndarray:
@@ -87,7 +100,7 @@ class FloatTensor(msg.FloatTensor):
             np.ndarray: results.
         """
         arr = np.array(self.values, dtype=np.float32, **kwargs)
-        arr = arr.reshape(self.shape)
+        arr = arr.reshape(self.shape.tolist())
         return arr
 
     def pack(self) -> msg.FloatTensor:

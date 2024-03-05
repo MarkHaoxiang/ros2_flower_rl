@@ -23,7 +23,7 @@ def generate_launch_description():
         N_PARTITIONS, default_value="10"
     )
     downloader_node = Node(
-        package="toy_fl_publisher",
+        package="toy_fl",
         executable="downloader",
         name="downloader",
         parameters=[
@@ -43,7 +43,7 @@ def generate_launch_description():
         for i in range(n):
             publishers.append(
                 Node(
-                    package="toy_fl_publisher",
+                    package="toy_fl",
                     executable="publisher",
                     namespace=f"client_{i}",
                     parameters=[
@@ -57,19 +57,18 @@ def generate_launch_description():
             )
         return publishers
 
-    # Publishers
-    def generate_subscriber_nodes(context: LaunchContext):
+    def generate_client_nodes(context: LaunchContext):
         n = int(context.launch_configurations[N_PARTITIONS])
-        subscribers = []
+        clients = []
         for i in range(n):
-            subscribers.append(
+            clients.append(
                 Node(
-                    package="flower_subscriber",
-                    executable="subscriber",
+                    package="toy_fl",
+                    executable="client",
                     namespace=f"client_{i}",
                 )
             )
-        return subscribers
+        return clients
 
     publisher_nodes = RegisterEventHandler(
         event_handler=OnProcessExit(
@@ -78,10 +77,10 @@ def generate_launch_description():
         )
     )
 
-    subscriber_nodes = RegisterEventHandler(
+    client_nodes = RegisterEventHandler(
         event_handler=OnProcessExit(
             target_action=downloader_node,
-            on_exit=OpaqueFunction(function=generate_subscriber_nodes),
+            on_exit=OpaqueFunction(function=generate_client_nodes),
         )
     )
 
@@ -93,6 +92,6 @@ def generate_launch_description():
             n_partitions_value_launch_arg,
             downloader_node,
             publisher_nodes,
-            subscriber_nodes,
+            client_nodes
         ]
     )

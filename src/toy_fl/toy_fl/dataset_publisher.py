@@ -42,7 +42,7 @@ class DatasetPublisher(Node):
         self.add_on_set_parameters_callback(self.parameter_change_callback)
 
         # Build publisher
-        self.publisher_ = self.create_publisher(msg.FeatureLabelPair, "data_stream", 10)
+        self._publisher = self.create_publisher(msg.FeatureLabelPair, "data_stream", 10)
 
     def parameter_change_callback(self, params: List[rclpy.Parameter]):
         successful = True
@@ -85,7 +85,7 @@ class DatasetPublisher(Node):
         X: torch.Tensor = data[feature_identifier].to(torch.float32)
         y: torch.Tensor = data[label_identifier].to(torch.float32)
         msg = FeatureLabelPair.build(X, y)
-        self.publisher_.publish(msg.pack())
+        self._publisher.publish(msg.pack())
 
     @property
     def dataset_dir_parameter(self) -> str | None:
