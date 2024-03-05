@@ -1,5 +1,5 @@
 # System workspace
-source /opt/ros/humble/setup.bash
+source /opt/ros/humble/setup.zsh
 rosdep install -i --from-path src --rosdistro humble -y
 
 # Venv
@@ -11,6 +11,6 @@ fi
 source venv/bin/activate
 
 # Project workspace
-source install/local_setup.bash
+source install/local_setup.zsh
 
 export __ROS_ENV_READY__=1
