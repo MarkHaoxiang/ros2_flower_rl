@@ -1,13 +1,14 @@
 from collections import OrderedDict
 from typing import List
 import math
+import logging
 
 import rclpy
 from rclpy.node import Node
 
-from datasets import load_from_disk
 import torch
 import flwr as fl
+from flwr.common.logger import log
 from flwr.common.typing import (
     Parameters,
     GetParametersIns,
@@ -70,7 +71,8 @@ class ToyClient(Node):
         self._label_buffer.append(label)
 
         # Check for initialisation
-        if self._X is None and len(self._feature_buffer) >= BATCH_SIZE*2:
+        # TODO: Change init time
+        if self._X is None and len(self._feature_buffer) >= BATCH_SIZE*10:
             self.initialise_client()
 
     def initialise_client(self):
@@ -99,18 +101,24 @@ class ToyClient(Node):
 
     def fit(self, ins: FitIns) -> FitRes:
         # Collect data
-        features = torch.stack(self._feature_buffer)
-        labels = torch.stack(self._label_buffer)
-        self._X = torch.cat((self._X, features))
-        self._y = torch.cat((self._y, labels))
-        self._feature_buffer = []
-        self._label_buffer = []
+        if len(self._feature_buffer) > 0:
+            features = torch.stack(self._feature_buffer)
+            labels = torch.stack(self._label_buffer)
+            self._X = torch.cat((self._X, features))
+            self._y = torch.cat((self._y, labels))
+            self._feature_buffer = []
+            self._label_buffer = []
+
+        # Update parameters
+        self.flwr_set_parameters(ins.parameters)
 
         # Train
-        n, n_batches = len(self._X), math.ceil(n / BATCH_SIZE)
+        n = len(self._X)
+        n_batches = math.ceil(n / BATCH_SIZE)
         average_loss = 0
         for i in range(n_batches):
-            X, y = self._X[i:max(n,i+BATCH_SIZE)], self._y[i:max(n,i+BATCH_SIZE)]
+            X = self._X[i*BATCH_SIZE:max(n,i+BATCH_SIZE)]
+            y = self._y[i*BATCH_SIZE:max(n,i+BATCH_SIZE)].to(torch.long)
             py = self._net(X)
             loss = self._loss_fn(py, y)
             average_loss += loss.item()
@@ -126,7 +134,7 @@ class ToyClient(Node):
                 message=""
             ),
             num_examples=n,
-            parameters=self.get_parameters(GetParametersIns(config=ins.config)),
+            parameters=self.flwr_get_parameters(GetParametersIns(config=ins.config)).parameters,
             metrics= {"loss": average_loss}
         )
 
@@ -151,8 +159,8 @@ class ToyClientWrapper(fl.client.Client):
     def get_parameters(self, ins: GetParametersIns) -> GetParametersRes:
         return self._client.flwr_get_parameters(ins)
 
-    def __getattr__(self, name: str):
-       return self._client.__getattribute__(name)
+    def fit(self, ins: FitIns) -> FitRes:
+        return self._client.fit(ins)
 
 def main(args=None):
     rclpy.init(args=args)
