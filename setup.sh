@@ -1,6 +1,7 @@
 # System workspace
 source /opt/ros/humble/setup.bash
 rosdep install -i --from-path src --rosdistro humble -y
+export WEBOTS_HOME=/usr/local/webots
 
 # Venv
 if ! [ -d "venv" ]; then
