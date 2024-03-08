@@ -1,12 +1,15 @@
 from __future__ import annotations
+from typing import Union, Tuple, Optional, Type
 
 import torch
 import numpy as np
 
 import ml_interfaces.msg as msg
+import ml_interfaces.srv as srv
 
 # Typing utility
 Tensor = torch.Tensor | np.ndarray
+
 
 class FeatureLabelPair(msg.FeatureLabelPair):
     """A wrapper around the FeatureLabelPair msg with utilities"""
@@ -30,12 +33,11 @@ class FeatureLabelPair(msg.FeatureLabelPair):
         if not isinstance(label, FloatTensor):
             label = FloatTensor.build(label)
         return FeatureLabelPair(feature=feature, label=label)
-    
+
     @staticmethod
     def unpack(msg: msg.FeatureLabelPair):
         return FeatureLabelPair(
-            feature=FloatTensor.unpack(msg.feature),
-            label=FloatTensor.unpack(msg.label)
+            feature=FloatTensor.unpack(msg.feature), label=FloatTensor.unpack(msg.label)
         )
 
     def torch(self, **kwargs):
@@ -75,13 +77,10 @@ class FloatTensor(msg.FloatTensor):
             return FloatTensor(shape=list(data.shape), values=data.flatten().tolist())
         else:
             raise NotImplementedError
-    
+
     @staticmethod
     def unpack(msg: msg.FloatTensor) -> FloatTensor:
-        return FloatTensor(
-            shape=msg.shape,
-            values=msg.values
-        )
+        return FloatTensor(shape=msg.shape, values=msg.values)
 
     def torch(self, **kwargs) -> torch.Tensor:
         """Converts to torch tensor.
@@ -105,3 +104,143 @@ class FloatTensor(msg.FloatTensor):
 
     def pack(self) -> msg.FloatTensor:
         return msg.FloatTensor(shape=self.shape, values=self.values)
+
+
+class GymService(srv.GymService):
+    @staticmethod
+    def build_request(
+        action: Union[np.ndarray, torch.Tensor, FloatTensor, msg.FloatTensor],
+        reset: bool = False,
+    ) -> srv.GymService.Request:
+        """Builds a gym service request
+
+        Args:
+            action (np.ndarray | torch.Tensor | FloatTensor | msg.FloatTensor): the action proposed by gym client
+            reset (bool): whether this request is a reset request
+
+        -------
+        Returns:
+            srv.GymService.Request The request to be sent to the server
+        """
+        # TODO: check if we can omit certain fields in the request
+        request = super().Request()
+        request.reset = reset
+        if not isinstance(action, FloatTensor, msg.FloatTensor):
+            action = FloatTensor.build(action)
+        if not isinstance(action, msg.FloatTensor):
+            action = action.pack()
+        request.action = action
+        return request
+
+    @staticmethod
+    def unpack_request(
+        request: srv.GymService.Request, type: Optional[Type] = None
+    ) -> Tuple[Union[FloatTensor, np.ndarray, torch.Tensor], bool]:
+        """Unpacks a GymService Request
+        Args:
+            request (srv.GymService.Request)
+
+        ------
+        Returns:
+            action (np.ndarray), reset (bool)
+            the action and whether the request is for a reset; if the request is
+            a reset, the action would be empty
+        """
+        action = FloatTensor.unpack(request.action)
+        reset = request.reset
+        if type is torch.Tensor:
+            action = action.torch()
+        elif type is np.ndarray:
+            action = action.numpy()
+        return action, reset
+
+    @staticmethod
+    def set_response(
+        response: srv.GymService.Response,
+        s_1: Union[msg.FloatTensor, FloatTensor, torch.Tensor, np.ndarray],
+        r: float,
+        term: bool,
+        trnc: bool,
+        info: Optional[FloatTensor] = None,
+    ) -> None:
+        """Sets the content of a GymService response
+
+        Args:
+            response (srv.GymService.Response): The response to edit
+            s_1 (FloatTensor | torch.Tensor | np.ndarray): The returned state after action
+            r (float) : reward
+            term (bool): terminated
+            trnc (bool): truncated
+            info (Optional FloatTensor): extra info, with self defined schemas
+
+        -------
+        Returns:
+            srv.GymService.Response The request to be sent to the server
+        """
+        # TODO: check if we can omit certain fields in the request
+
+        # Convert float tensor input to message float tensor
+        if not isinstance(s_1, FloatTensor, msg.FloatTensor):
+            s_1 = FloatTensor.build(s_1)
+        if not isinstance(s_1, msg.FloatTensor):
+            s_1 = s_1.pack()
+
+        response.s_1 = s_1
+        response.r = r
+        response.term = term
+        response.trnc = trnc
+        if info is not None:
+            response.info = info
+        return response
+
+    @staticmethod
+    def build_response(*args, **kwargs) -> srv.GymService.Response:
+        """Builds a gym service response
+
+        Since we are using callbacks, this is probably unused
+
+        Args:
+            s_1 (FloatTensor | torch.Tensor | np.ndarray): The returned state after action
+            r (float) : reward
+            term (bool): terminated
+            trnc (bool): truncated
+            info (Optional FloatTensor): extra info, with self defined schemas
+
+        -------
+        Returns:
+            srv.GymService.Response The request to be sent to the server
+        """
+        response: srv.GymService.Response = super().Response()
+        GymService.set_response(response, *args, **kwargs)
+        return response
+
+    @staticmethod
+    def unpack_response(
+        response: srv.GymService.Response, state_type: Optional[Type] = None
+    ) -> Tuple[
+        Union[FloatTensor, torch.Tensor, np.ndarray], float, bool, bool, FloatTensor
+    ]:
+        """Unpacks response from GymServer
+
+        Args:
+            response (srv.GymService.Response): response from the server
+            state_type (Optional Type): Type of desired return value for the state
+
+        -------
+        Returns:
+            state (FloatTensor, Tensor or NDArray depending on state type),
+            reward (float), terminated (bool), truncated (bool), info (FloatTensor)
+        """
+        s_1 = FloatTensor.unpack(response.s_1)
+        if state_type is not None:
+            if state_type is torch.Tensor:
+                s_1 = s_1.torch()
+            elif state_type is np.ndarray:
+                s_1 = s_1.numpy()
+            else:
+                raise NotImplementedError
+        reward = response.r
+        terminated = response.term
+        truncated = response.trnc
+        info = response.info
+        return s_1, reward, terminated, truncated, info

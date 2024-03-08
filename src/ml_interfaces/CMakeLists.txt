@@ -25,7 +25,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/FloatTensor.msg"
   "msg/FeatureLabelPair.msg"
   "msg/Transition.msg"
-  "srv/Gym.srv"
+  "srv/GymService.srv"
 )
 
 ament_package()

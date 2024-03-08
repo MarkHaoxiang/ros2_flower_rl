@@ -4,7 +4,7 @@ bool            reset  # Reset
 FloatTensor     action # Action
 ---
 # Response
-FloatTensor     s_0    # Initial state/observation
+FloatTensor     s_1    # State in the environment after action
 float32         r      # Reward
 bool            term   # Terminated
 bool            trnc   # Truncated
