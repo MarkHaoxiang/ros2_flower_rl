@@ -25,6 +25,10 @@ build/
 # qcreator stuff
 CMakeLists.txt.user
 
+# clangd index and caches
+compile_commands*
+.clang*
+
 srv/_*.py
 *.pcd
 *.pyc
