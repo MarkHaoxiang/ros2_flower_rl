@@ -1,0 +1,11 @@
+# Gymnasium Environment Request and Service message format
+# Request
+bool            reset  # Reset
+FloatTensor     action # Action
+---
+# Response
+FloatTensor     s_0    # Initial state/observation
+float32         r      # Reward
+bool            term   # Terminated
+bool            trnc   # Truncated
+FloatTensor     info   # Extra information
