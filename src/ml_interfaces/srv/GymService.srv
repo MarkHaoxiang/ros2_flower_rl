@@ -1,11 +1,7 @@
 # Gymnasium Environment Request and Service message format
 # Request
-bool            reset  # Reset
 FloatTensor     action # Action
 ---
 # Response
 FloatTensor     s_1    # State in the environment after action
-float32         r      # Reward
-bool            term   # Terminated
-bool            trnc   # Truncated
 FloatTensor     info   # Extra information

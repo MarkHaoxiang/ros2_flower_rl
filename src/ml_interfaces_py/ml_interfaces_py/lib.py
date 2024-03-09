@@ -110,7 +110,6 @@ class GymService(srv.GymService):
     @staticmethod
     def build_request(
         action: Union[np.ndarray, torch.Tensor, FloatTensor, msg.FloatTensor],
-        reset: bool = False,
     ) -> srv.GymService.Request:
         """Builds a gym service request
 
@@ -124,7 +123,6 @@ class GymService(srv.GymService):
         """
         # TODO: check if we can omit certain fields in the request
         request = super().Request()
-        request.reset = reset
         if not isinstance(action, FloatTensor, msg.FloatTensor):
             action = FloatTensor.build(action)
         if not isinstance(action, msg.FloatTensor):
@@ -147,20 +145,16 @@ class GymService(srv.GymService):
             a reset, the action would be empty
         """
         action = FloatTensor.unpack(request.action)
-        reset = request.reset
         if type is torch.Tensor:
             action = action.torch()
         elif type is np.ndarray:
             action = action.numpy()
-        return action, reset
+        return action
 
     @staticmethod
     def set_response(
         response: srv.GymService.Response,
         s_1: Union[msg.FloatTensor, FloatTensor, torch.Tensor, np.ndarray],
-        r: float,
-        term: bool,
-        trnc: bool,
         info: Optional[FloatTensor] = None,
     ) -> None:
         """Sets the content of a GymService response
@@ -186,9 +180,6 @@ class GymService(srv.GymService):
             s_1 = s_1.pack()
 
         response.s_1 = s_1
-        response.r = r
-        response.term = term
-        response.trnc = trnc
         if info is not None:
             response.info = info
         return response
@@ -201,9 +192,6 @@ class GymService(srv.GymService):
 
         Args:
             s_1 (FloatTensor | torch.Tensor | np.ndarray): The returned state after action
-            r (float) : reward
-            term (bool): terminated
-            trnc (bool): truncated
             info (Optional FloatTensor): extra info, with self defined schemas
 
         -------
@@ -217,9 +205,7 @@ class GymService(srv.GymService):
     @staticmethod
     def unpack_response(
         response: srv.GymService.Response, state_type: Optional[Type] = None
-    ) -> Tuple[
-        Union[FloatTensor, torch.Tensor, np.ndarray], float, bool, bool, FloatTensor
-    ]:
+    ) -> Tuple[Union[FloatTensor, torch.Tensor, np.ndarray], FloatTensor]:
         """Unpacks response from GymServer
 
         Args:
@@ -239,8 +225,5 @@ class GymService(srv.GymService):
                 s_1 = s_1.numpy()
             else:
                 raise NotImplementedError
-        reward = response.r
-        terminated = response.term
-        truncated = response.trnc
         info = response.info
-        return s_1, reward, terminated, truncated, info
+        return s_1, info
