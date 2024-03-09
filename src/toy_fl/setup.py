@@ -22,6 +22,7 @@ setup(
             "downloader = toy_fl.dataset_downloader:main",
             "publisher = toy_fl.dataset_publisher:main",
             "client = toy_fl.client:main",
+            "gym_controller = toy_fl.gym_controller:main",
         ],
     },
 )

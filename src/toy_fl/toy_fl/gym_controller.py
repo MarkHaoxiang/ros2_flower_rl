@@ -21,9 +21,12 @@ from gymnasium.core import Env
 import kitten
 from kitten.common.util import build_env, build_critic
 
+ActionType = np.ndarray
+StateType = np.ndarray
+
 
 class GymController(Node):
-    """Publishes a HuggingFace dataset on a topic"""
+    """A robot controller simulating an Gymnasium RL Environment"""
 
     def __init__(self):
         super().__init__("Gymnasium simulation server")
@@ -46,12 +49,43 @@ class GymController(Node):
         request: srv.ControllerService.Request,
         response: srv.ControllerService.Response,
     ) -> srv.ControllerService.Response:
-        action = ControllerService.unpack_request(request, type=np.ndarray)
-        s_1 = self.env_step(action)
+        """Callback function to run when we receive an action request
+
+        (IMPORTANT, TODO) this function also has the side effect of
+        publishing the transition to the memory/replay buffer node
+
+        Args:
+            request (srv.ControllerService.Request): request message received
+            response (srv.ControllerService.Response): response message to send
+
+        --------
+        Returns:
+            srv.ControllerService.Response response message containing the new
+            state in the environment when the requested action is taken; if
+            the environment is truncated or terminated, the state after reset
+            is sent
+        """
+        action = ControllerService.unpack_request(request, type=ActionType)
+        s_1 = self._env_step(action)
         ControllerService.set_response(response, s_1=s_1)
         return response
 
-    def env_step(self, action: np.ndarray):
+    def _env_step(self, action: ActionType) -> StateType:
+        """Take one step on the included gymnasium environment
+
+        (IMPORTANT, TODO) this function also has the side effect of
+        publishing the transition to the memory/replay buffer node
+
+        Args:
+            action (ActionType): the action requested by the service
+
+
+        --------
+        Returns:
+            The state after the transition is taken; if the environment
+            needs to reset after the action is taken, the state after reset
+            is returned
+        """
         # Transition
         s_1, reward, terminated, truncated, info = self._env.step(action)
         # TODO: whenever a step is taken, publish the transition
