@@ -106,11 +106,11 @@ class FloatTensor(msg.FloatTensor):
         return msg.FloatTensor(shape=self.shape, values=self.values)
 
 
-class GymService(srv.GymService):
+class ControllerService(srv.ControllerService):
     @staticmethod
     def build_request(
         action: Union[np.ndarray, torch.Tensor, FloatTensor, msg.FloatTensor],
-    ) -> srv.GymService.Request:
+    ) -> srv.ControllerService.Request:
         """Builds a gym service request
 
         Args:
@@ -119,7 +119,7 @@ class GymService(srv.GymService):
 
         -------
         Returns:
-            srv.GymService.Request The request to be sent to the server
+            srv.ControllerService.Request The request to be sent to the server
         """
         # TODO: check if we can omit certain fields in the request
         request = super().Request()
@@ -132,11 +132,11 @@ class GymService(srv.GymService):
 
     @staticmethod
     def unpack_request(
-        request: srv.GymService.Request, type: Optional[Type] = None
+        request: srv.ControllerService.Request, type: Optional[Type] = None
     ) -> Tuple[Union[FloatTensor, np.ndarray, torch.Tensor], bool]:
-        """Unpacks a GymService Request
+        """Unpacks a ControllerService Request
         Args:
-            request (srv.GymService.Request)
+            request (srv.ControllerService.Request)
 
         ------
         Returns:
@@ -153,23 +153,19 @@ class GymService(srv.GymService):
 
     @staticmethod
     def set_response(
-        response: srv.GymService.Response,
+        response: srv.ControllerService.Response,
         s_1: Union[msg.FloatTensor, FloatTensor, torch.Tensor, np.ndarray],
         info: Optional[FloatTensor] = None,
     ) -> None:
-        """Sets the content of a GymService response
+        """Sets the content of a ControllerService response
 
         Args:
-            response (srv.GymService.Response): The response to edit
+            response (srv.ControllerService.Response): The response to edit
             s_1 (FloatTensor | torch.Tensor | np.ndarray): The returned state after action
-            r (float) : reward
-            term (bool): terminated
-            trnc (bool): truncated
-            info (Optional FloatTensor): extra info, with self defined schemas
 
         -------
         Returns:
-            srv.GymService.Response The request to be sent to the server
+            srv.ControllerService.Response The request to be sent to the server
         """
         # TODO: check if we can omit certain fields in the request
 
@@ -180,42 +176,38 @@ class GymService(srv.GymService):
             s_1 = s_1.pack()
 
         response.s_1 = s_1
-        if info is not None:
-            response.info = info
         return response
 
     @staticmethod
-    def build_response(*args, **kwargs) -> srv.GymService.Response:
+    def build_response(*args, **kwargs) -> srv.ControllerService.Response:
         """Builds a gym service response
 
         Since we are using callbacks, this is probably unused
 
         Args:
             s_1 (FloatTensor | torch.Tensor | np.ndarray): The returned state after action
-            info (Optional FloatTensor): extra info, with self defined schemas
 
         -------
         Returns:
-            srv.GymService.Response The request to be sent to the server
+            srv.ControllerService.Response The request to be sent to the server
         """
-        response: srv.GymService.Response = super().Response()
-        GymService.set_response(response, *args, **kwargs)
+        response: srv.ControllerService.Response = super().Response()
+        ControllerService.set_response(response, *args, **kwargs)
         return response
 
     @staticmethod
     def unpack_response(
-        response: srv.GymService.Response, state_type: Optional[Type] = None
+        response: srv.ControllerService.Response, state_type: Optional[Type] = None
     ) -> Tuple[Union[FloatTensor, torch.Tensor, np.ndarray], FloatTensor]:
         """Unpacks response from GymServer
 
         Args:
-            response (srv.GymService.Response): response from the server
+            response (srv.ControllerService.Response): response from the server
             state_type (Optional Type): Type of desired return value for the state
 
         -------
         Returns:
             state (FloatTensor, Tensor or NDArray depending on state type),
-            reward (float), terminated (bool), truncated (bool), info (FloatTensor)
         """
         s_1 = FloatTensor.unpack(response.s_1)
         if state_type is not None:
@@ -225,5 +217,4 @@ class GymService(srv.GymService):
                 s_1 = s_1.numpy()
             else:
                 raise NotImplementedError
-        info = response.info
-        return s_1, info
+        return s_1

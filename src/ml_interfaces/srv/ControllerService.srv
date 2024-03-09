@@ -4,4 +4,3 @@ FloatTensor     action # Action
 ---
 # Response
 FloatTensor     s_1    # State in the environment after action
-FloatTensor     info   # Extra information
