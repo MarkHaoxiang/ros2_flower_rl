@@ -105,6 +105,64 @@ class FloatTensor(msg.FloatTensor):
     def pack(self) -> msg.FloatTensor:
         return msg.FloatTensor(shape=self.shape, values=self.values)
 
+class Transition(msg.Transition):
+    """ A wrapper around the Transition msg with utilities
+    """
+    @staticmethod
+    def build(data: tuple[Tensor, Tensor, float, Tensor, bool]) -> Transition:
+        """ Constructs a ROS compatible Transition object from data
+
+        Args:
+            data (tuple[Tensor, Tensor, float, Tensor, bool]): Transition of
+                (state, action, reward, next_state, done)
+
+        Returns:
+            Transition: ROS Transition message.
+        """
+        return Transition(
+            s_0 = data[0],
+            a = data[1],
+            r = data[2],
+            s_1 = data[3],
+            d = data[4]
+        )
+
+    def torch(self, **kwargs) -> tuple[torch.Tensor, torch.Tensor, float, torch.Tensor, bool]:
+        return (
+            self.s_0.torch(**kwargs),
+            self.a.torch(**kwargs),
+            self.r,
+            self.s_1.torch(**kwargs),
+            self.d
+        )
+
+    def numpy(self, **kwargs):
+        return (
+            self.s_0.numpy(**kwargs),
+            self.a.numpy(**kwargs),
+            self.r,
+            self.s_1.numpy(**kwargs),
+            self.d
+        )
+
+    @staticmethod
+    def unpack(msg: msg.Transition) -> Transition:
+        return Transition(
+            s_0 = FloatTensor.unpack(msg.s_0),
+            a = FloatTensor.unpack(msg.a),
+            r = msg.r,
+            s_1 = FloatTensor.unpack(msg.a),
+            d = msg.d
+        )
+    
+    def pack(self) -> msg.Transition:
+        return msg.Transition(
+            s_0 = self.s_0.pack(),
+            a = self.a.pack(),
+            r = self.r,
+            s_1 = self.s_1.msg,
+            d = self.d
+        )
 
 class ControllerService(srv.ControllerService):
     @staticmethod
