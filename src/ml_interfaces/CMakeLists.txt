@@ -26,6 +26,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/FeatureLabelPair.msg"
   "msg/Transition.msg"
   "srv/GymService.srv"
+  "srv/SampleFeatureLabelPair.srv"
 )
 
 ament_package()

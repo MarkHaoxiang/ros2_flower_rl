@@ -1,0 +1,6 @@
+# Request response to sample a batch of training data
+# Request
+int64 n                    # Number of Samples
+---
+# Response
+FeatureLabelPair[] batch # Batch of labelled data

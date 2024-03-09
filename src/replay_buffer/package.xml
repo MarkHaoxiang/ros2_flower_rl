@@ -8,7 +8,7 @@
   <license>TODO: License declaration</license>
 
   <depend>rclcpp</depend>
-  <depend>std_msgs</depend>
+  <depend>ml_interfaces</depend>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
