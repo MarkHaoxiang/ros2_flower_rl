@@ -122,7 +122,7 @@ class ControllerService(srv.ControllerService):
             srv.ControllerService.Request The request to be sent to the server
         """
         # TODO: check if we can omit certain fields in the request
-        request = super().Request()
+        request = srv.ControllerService.Request()
         if not isinstance(action, FloatTensor, msg.FloatTensor):
             action = FloatTensor.build(action)
         if not isinstance(action, msg.FloatTensor):
@@ -191,7 +191,7 @@ class ControllerService(srv.ControllerService):
         Returns:
             srv.ControllerService.Response The request to be sent to the server
         """
-        response: srv.ControllerService.Response = super().Response()
+        response: srv.ControllerService.Response = srv.ControllerService.Response()
         ControllerService.set_response(response, *args, **kwargs)
         return response
 
@@ -199,7 +199,7 @@ class ControllerService(srv.ControllerService):
     def unpack_response(
         response: srv.ControllerService.Response, state_type: Optional[Type] = None
     ) -> Tuple[Union[FloatTensor, torch.Tensor, np.ndarray], FloatTensor]:
-        """Unpacks response from GymServer
+        """Unpacks response from ControllerService
 
         Args:
             response (srv.ControllerService.Response): response from the server
