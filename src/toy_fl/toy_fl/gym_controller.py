@@ -21,8 +21,11 @@ from gymnasium.core import Env
 import kitten
 from kitten.common.util import build_env, build_critic
 
+# TODO: put this in a centralized place to retain consistency
+# between client and server
 ActionType = np.ndarray
 StateType = np.ndarray
+srv_name = "gym_environment"
 
 
 class GymController(Node):
@@ -30,7 +33,7 @@ class GymController(Node):
 
     def __init__(self):
         super().__init__("Gymnasium simulation server")
-        self.get_logger().info(f"Building publisher {self.get_fully_qualified_name()}")
+        self.get_logger().info(f"Building server {self.get_fully_qualified_name()}")
         self.declare_parameters(
             namespace="", parameters=[("env_name", rclpy.Parameter.Type.STRING)]
         )
@@ -38,9 +41,9 @@ class GymController(Node):
         name = self.gym_env_name
         env = build_env(name)
         self._env = env
-        self.services = self.create_service(
+        self.service = self.create_service(
             srv.ControllerService,
-            srv_name="gym_environment",
+            srv_name=srv_name,
             callback=self.on_action_callback,
         )
 
