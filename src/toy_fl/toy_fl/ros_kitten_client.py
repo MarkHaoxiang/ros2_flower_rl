@@ -3,18 +3,17 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import Dict, Tuple, Any, List
+from typing import Any, Dict, List, Tuple
 
 import flwr as fl
-from flwr.common.typing import (GetParametersRes, GetParametersIns)
 import kitten
-from kitten.experience import AuxiliaryMemoryData
 import numpy as np
 import torch
 from florl.client.client import FlorlClient
 from florl.common import Knowledge
-from flwr.common.typing import (Config, Scalar)
+from flwr.common.typing import Config, GetParametersIns, GetParametersRes, Scalar
 from gymnasium.spaces import Space
+from kitten.experience import AuxiliaryMemoryData
 
 from rl_actor import RlActor
 
@@ -53,7 +52,7 @@ class RosKittenClient(FlorlClient, RlActor[np.ndarray, np.ndarray], ABC):
         # RL Modules
         # For initialisation
         self._obs = np.empty(0, np.float32)
-        self.take_step(n=1, init=True) # Take first step, initialises the environment
+        self.take_step(n=1, init=True)  # Take first step, initialises the environment
 
         self._step_cnt = 0
         self._build_algorithm()

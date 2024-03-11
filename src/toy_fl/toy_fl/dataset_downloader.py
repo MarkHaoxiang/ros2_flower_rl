@@ -1,10 +1,11 @@
-import os, shutil
+import os
+import shutil
 
 import rclpy
-from rclpy.node import Node
-from rclpy import logging
-from rospkg import get_ros_home
 from flwr_datasets import FederatedDataset
+from rclpy import logging
+from rclpy.node import Node
+from rospkg import get_ros_home
 
 
 def generate_partition_path(dataset_dir, name, cid):
@@ -12,7 +13,6 @@ def generate_partition_path(dataset_dir, name, cid):
 
 
 class DatasetDownloader(Node):
-
     def __init__(self):
         super().__init__("dataset_downloader")
 

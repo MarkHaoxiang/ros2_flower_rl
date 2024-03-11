@@ -2,24 +2,18 @@
 
 from typing import List
 
-import rclpy
-from rclpy.node import Node
-
-from rcl_interfaces.msg import SetParametersResult
-
-from datasets import load_from_disk
-
-import torch
-import numpy as np
-
+import kitten
 import ml_interfaces.msg as msg
 import ml_interfaces.srv as srv
-from ml_interfaces_py import FeatureLabelPair, ControllerService
-
+import numpy as np
+import rclpy
+import torch
+from datasets import load_from_disk
 from gymnasium.core import Env
-
-import kitten
-from kitten.common.util import build_env, build_critic
+from kitten.common.util import build_critic, build_env
+from ml_interfaces_py import ControllerService, FeatureLabelPair
+from rcl_interfaces.msg import SetParametersResult
+from rclpy.node import Node
 
 # TODO: put this in a centralized place to retain consistency
 # between client and server

@@ -1,14 +1,12 @@
 from typing import List
 
-import rclpy
-from rclpy.node import Node
-from rcl_interfaces.msg import SetParametersResult
-
-from datasets import load_from_disk
-import torch
-
 import ml_interfaces.msg as msg
+import rclpy
+import torch
+from datasets import load_from_disk
 from ml_interfaces_py import FeatureLabelPair
+from rcl_interfaces.msg import SetParametersResult
+from rclpy.node import Node
 
 
 class DatasetPublisher(Node):

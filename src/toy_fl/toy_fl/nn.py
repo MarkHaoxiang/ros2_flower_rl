@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 
+
 class MnistClassifier(nn.Module):
     """This class defines a basic convolutional neural nework for training the MNIST task"""
 

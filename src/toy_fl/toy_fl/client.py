@@ -1,23 +1,22 @@
+import logging
+import math
 from collections import OrderedDict
 from typing import List
-import math
-import logging
 
-import rclpy
-from rclpy.node import Node
-
-import torch
 import flwr as fl
+import rclpy
+import torch
 from flwr.common.logger import log
 from flwr.common.typing import (
-    Parameters,
-    GetParametersIns,
-    GetParametersRes,
-    Status,
     Code,
     FitIns,
     FitRes,
+    GetParametersIns,
+    GetParametersRes,
+    Parameters,
+    Status,
 )
+from rclpy.node import Node
 
 # TODO: Configuration of training parameters
 BATCH_SIZE = 16
@@ -27,13 +26,12 @@ from ml_interfaces_py import FeatureLabelPair
 
 from .nn import MnistClassifier
 
-class ToyClient(Node):
-    """ ROS node responsible for subscribing to sensor data, training and communicating with the flower server
-    """
 
-    def __init__(self,
-                 server_addr: str = "[::]:8080"):
-        """ ROS node responsible for subscribing to sensor data, training and communicating with the flower server 
+class ToyClient(Node):
+    """ROS node responsible for subscribing to sensor data, training and communicating with the flower server"""
+
+    def __init__(self, server_addr: str = "[::]:8080"):
+        """ROS node responsible for subscribing to sensor data, training and communicating with the flower server
 
         Args:
             server_addr (str, optional): Flower server sonnection address. Defaults to "[::]:8080".
@@ -60,7 +58,7 @@ class ToyClient(Node):
         self._optim = torch.optim.Adam(self._net.parameters())
 
     def listener_callback(self, msg: msg.FeatureLabelPair) -> None:
-        """ Callback to buffer datastream
+        """Callback to buffer datastream
 
         Args:
             msg (FeatureLabelPair): Subscribed data recieved.
@@ -72,7 +70,7 @@ class ToyClient(Node):
 
         # Check for initialisation
         # TODO: Change init time
-        if self._X is None and len(self._feature_buffer) >= BATCH_SIZE*10:
+        if self._X is None and len(self._feature_buffer) >= BATCH_SIZE * 10:
             self.initialise_client()
 
     def initialise_client(self):
@@ -82,7 +80,7 @@ class ToyClient(Node):
         fl.client.start_client(
             server_address=self._server_addr,
             client=ToyClientWrapper(self),
-            insecure=True
+            insecure=True,
         )
 
     def flwr_get_parameters(self, ins: GetParametersIns) -> GetParametersRes:
@@ -90,7 +88,7 @@ class ToyClient(Node):
             status=Status(code=Code.OK, message=""),
             parameters=fl.common.ndarrays_to_parameters(
                 [val.cpu().numpy() for _, val in self._net.state_dict().items()]
-            )
+            ),
         )
 
     def flwr_set_parameters(self, parameters: Parameters) -> None:
@@ -117,8 +115,8 @@ class ToyClient(Node):
         n_batches = math.ceil(n / BATCH_SIZE)
         average_loss = 0
         for i in range(n_batches):
-            X = self._X[i*BATCH_SIZE:max(n,i+BATCH_SIZE)]
-            y = self._y[i*BATCH_SIZE:max(n,i+BATCH_SIZE)].to(torch.long)
+            X = self._X[i * BATCH_SIZE : max(n, i + BATCH_SIZE)]
+            y = self._y[i * BATCH_SIZE : max(n, i + BATCH_SIZE)].to(torch.long)
             py = self._net(X)
             loss = self._loss_fn(py, y)
             average_loss += loss.item()
@@ -129,26 +127,25 @@ class ToyClient(Node):
 
         # Results
         return FitRes(
-            status=Status(
-                Code.OK,
-                message=""
-            ),
+            status=Status(Code.OK, message=""),
             num_examples=n,
-            parameters=self.flwr_get_parameters(GetParametersIns(config=ins.config)).parameters,
-            metrics= {"loss": average_loss}
+            parameters=self.flwr_get_parameters(
+                GetParametersIns(config=ins.config)
+            ).parameters,
+            metrics={"loss": average_loss},
         )
 
     @property
     def device(self) -> str:
-        """ Training device
-        """
+        """Training device"""
         return "cpu"
 
+
 class ToyClientWrapper(fl.client.Client):
-    """ Compatibility layer between ROS and Flower
-    """
+    """Compatibility layer between ROS and Flower"""
+
     def __init__(self, toy_client: ToyClient) -> None:
-        """ Provides a correct namespace mapping for toy_client due to collisions between Ros and Flower
+        """Provides a correct namespace mapping for toy_client due to collisions between Ros and Flower
 
         Args:
             toy_client (ToyClient): _description_
@@ -162,12 +159,14 @@ class ToyClientWrapper(fl.client.Client):
     def fit(self, ins: FitIns) -> FitRes:
         return self._client.fit(ins)
 
+
 def main(args=None):
     rclpy.init(args=args)
     node = ToyClient()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
+
 
 if __name__ == "__main__":
     main()
