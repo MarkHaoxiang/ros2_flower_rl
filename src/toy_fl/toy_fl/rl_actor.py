@@ -13,7 +13,7 @@ import torch
 import kitten
 
 
-from ml_interfaces_py import ControllerService
+from ml_interfaces_py import Transition, ControllerService
 
 ActionType = TypeVar("ActionType", np.ndarray, torch.Tensor)  # ActionType
 StateType = TypeVar("StateType", np.ndarray, torch.Tensor)  # StateType
@@ -74,14 +74,25 @@ class RlActor(Generic[ActionType, StateType], Node, ABC):
         else:
             return ControllerService.unpack_response(result, self._state_type)
 
-    # TODO: Please implement the replay buffen sample
-    # Requirement: this should return exactly what
-    # kitten.experience.memory.ReplayBuffer.sample()
-    # returns
     def sample_request(self, n: int) -> tuple[kitten.experience.Transition, kitten.experience.AuxiliaryMemoryData]:
+        """ Samples a batch from memory
+
+        Args:
+            n (int): minibatch size.
+
+        Returns:
+            tuple[kitten.experience.Transition, kitten.experience.AuxiliaryMemoryData]: training batch
+        """
         request = srv.SampleTransition.Request(n=n)
         future = self.memory_client.call_async(request)
         rclpy.spin_until_future_complete(future)
-        batch: list[msg.Transition] = future.result().batch
-        # batch = [Trans for x in batch]
+        batch = [Transition.unpack(x) for x in future.result().batch]
+        batch = [x.numpy() for x in batch]
+        batch = kitten.experience.util.build_transition_from_list(batch)
+        aux = kitten.experience.AuxiliaryMemoryData(
+            weights=torch.ones(len(batch.s_0), batch.s_0.get_device()),
+            random=None,
+            indices=None
+        )
+        return batch, aux
 
