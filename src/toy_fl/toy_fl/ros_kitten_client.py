@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import Any, Dict, List, Tuple
 
-import flwr as fl
+import rclpy
 import kitten
 import numpy as np
 import torch
@@ -13,6 +13,9 @@ from florl.client.client import FlorlClient
 from florl.common import Knowledge
 from flwr.common.typing import Config, GetParametersIns, GetParametersRes, Scalar
 from gymnasium.spaces import Space
+from ml_interfaces import srv as srv
+from ml_interfaces import msg as msg
+from ml_interfaces_py import Transition
 from kitten.experience import AuxiliaryMemoryData
 
 from rl_actor import RlActor
@@ -57,7 +60,9 @@ class RosKittenClient(FlorlClient, RlActor[np.ndarray, np.ndarray], ABC):
         self._step_cnt = 0
         self._build_algorithm()
 
-        self.early_start()
+        self.memory_client = self.create_client(
+            srv_type=srv.SampleTransition, srv_name=replay_buffer_name
+        )
 
     def train(self, config: Config) -> Tuple[int, Dict[str, Scalar]]:
         metrics = {}
@@ -65,39 +70,17 @@ class RosKittenClient(FlorlClient, RlActor[np.ndarray, np.ndarray], ABC):
         critic_loss = []
         # Training
         for _ in range(int(config["frames"])):
-            self.take_step(n=1)
             # Collected Transitions
             num_samples = int(self._cfg["train"]["minibatch_size"])  # type: ignore
-            batch = self.sample_request(num_samples)
-
-            # Placeholder values that doesn't do anything
-            place_holder_idxs = torch.zeros(size=(num_samples,), device=self._device)
-            placeholder_aux = AuxiliaryMemoryData(
-                weights=torch.ones(num_samples, device=self._device),
-                random=torch.ones(num_samples, device=self._device),
-                indices=place_holder_idxs,
-            )
-            # End of placeholder values that doesn't do anything
-
-            batch = kitten.experience.Transition(*batch)
+            # TODO: Deal with async...
+            # TODO: Return Flower failure if not enough samples
+            batch, aux = self.sample_request(num_samples)
             # Algorithm Update
-            critic_loss.append(self.algorithm.update(batch, placeholder_aux, self.step))
+            critic_loss.append(self.algorithm.update(batch, aux, self.step))
 
         # Logging
         metrics["loss"] = sum(critic_loss) / len(critic_loss)
         return 1, metrics
-
-    def take_step(self, n: int, init: bool = False) -> None:
-        if init:
-            assert n == 1
-            action = np.empty((0,), np.float32)
-            self._obs = self.action_request(action)
-            # NOTE: initialisation does not increment step count, as expected
-        else:
-            for _ in range(n):
-                self._step += 1
-                action = self.policy(obs=self._obs)
-                self._obs = self.action_request(action)
 
     def get_flwr_parameter(self, ins: GetParametersIns) -> GetParametersRes:
         return FlorlClient.get_parameters(self, ins)
@@ -128,7 +111,33 @@ class RosKittenClient(FlorlClient, RlActor[np.ndarray, np.ndarray], ABC):
     @abstractmethod
     def policy(self) -> kitten.policy.Policy:
         raise NotImplementedError
+    
+    async def sample_request(
+        self, n: int
+    ) -> tuple[kitten.experience.Transition, kitten.experience.AuxiliaryMemoryData]:
+        """Samples a batch from memory
 
-    # TODO: I need to do this
-    def early_start(self):
-        pass
+        Args:
+            n (int): minibatch size.
+
+        Returns:
+            tuple[kitten.experience.Transition, kitten.experience.AuxiliaryMemoryData]: training batch
+        """
+        request = srv.SampleTransition.Request(n=n)
+        future = self.memory_client.call_async(request)
+        try:
+            response: srv.SampleTransition.Response = await future
+        except Exception as e:
+            self.get_logger().warn(str(e))
+
+        batch = [Transition.unpack(x) for x in response.batch]
+        batch = [x.numpy() for x in batch]
+        batch = kitten.experience.util.build_transition_from_list(batch)
+        # Placeholder
+        aux = kitten.experience.AuxiliaryMemoryData(
+            weights=torch.ones(len(batch.s_0), batch.s_0.get_device()),
+            random=None,
+            indices=None,
+        )
+        return batch, aux
+

@@ -106,7 +106,6 @@ private:
         {
             n = this->memory.size();
         }
-        RCLCPP_INFO(this->get_logger(), "%d", n);
         std::vector<std::shared_ptr<T>> out{};
         std::sample(
             this->memory.begin(),

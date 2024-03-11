@@ -1,6 +1,0 @@
-# Gymnasium Environment Request and Service message format
-# Request
-FloatTensor     s_1    # State in the environment after action
----
-# Response
-FloatTensor     action # Action

@@ -1,1 +1,1 @@
-from .lib import FloatTensor, FeatureLabelPair, ControllerService, Transition
+from .lib import FloatTensor, FeatureLabelPair, Transition

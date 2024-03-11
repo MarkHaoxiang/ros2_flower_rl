@@ -1,19 +1,17 @@
 # ruff: noqa: F401
 
-from typing import List
-
-import kitten
 import ml_interfaces.msg as msg
 import ml_interfaces.srv as srv
-import numpy as np
 import rclpy
-import torch
-from datasets import load_from_disk
-from gymnasium.core import Env
-from kitten.common.util import build_critic, build_env
-from ml_interfaces_py import ControllerService, FeatureLabelPair
-from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rcl_interfaces.msg import SetParametersResult
+
+import numpy as np
+import gymnasium as gym
+
+import ml_interfaces.srv as srv
+from ml_interfaces_py import FloatTensor, Transition
 
 # TODO: put this in a centralized place to retain consistency
 # between client and server
@@ -25,82 +23,80 @@ srv_name = "gym_environment"
 class GymController(Node):
     """A robot controller simulating an Gymnasium RL Environment"""
 
-    def __init__(self):
-        super().__init__("Gymnasium simulation server")
-        self.get_logger().info(f"Building server {self.get_fully_qualified_name()}")
-        self.declare_parameters(
-            namespace="", parameters=[("env_name", rclpy.Parameter.Type.STRING)]
+    def __init__(self, env_name: str):
+        super().__init__("gymnasium_controller")
+        self.get_logger().info(f"Building controller {self.get_fully_qualified_name()}")
+
+        self.env = gym.make(env_name)
+        self.s_0, _ = self.env.reset()
+
+        # ReentrantCallback group enables client and timer to execute concurrently
+        self.cb_group = ReentrantCallbackGroup()
+
+        # Build Policy client
+        self.policy_client = self.create_client(
+            srv_type=srv.PolicyService, srv_name="policy", callback_group=self.cb_group
         )
+        while not self.policy_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info("Policy service not available... waiting")
 
-        name = self.gym_env_name
-        env = build_env(name)
-        self._first_call = True
-        self._env = env
-        self._client = self.create_client(
-            srv_type=srv.ControllerService, srv_name=controller_name
+        # Transition publisher
+        self.publisher = self.create_publisher(msg.Transition, "observations", 10)
+
+        # Environment step frequency
+        self.declare_parameter("publish_frequency", 10.0)
+        self.timer = self.create_timer(
+            1.0
+            / self.get_parameter("publish_frequency")
+            .get_parameter_value()
+            .double_value,
+            self.timer_callback,
+            callback_group=self.cb_group,
         )
+        self.add_on_set_parameters_callback(self.parameter_change_callback)
 
-    def on_action_callback(
-        self,
-        request: srv.ControllerService.Request,
-        response: srv.ControllerService.Response,
-    ) -> srv.ControllerService.Response:
-        """Callback function to run when we receive an action request
+    def parameter_change_callback(self, params: list[rclpy.Parameter]):
+        successful = True
+        reason = ""
 
-        (IMPORTANT, TODO) this function also has the side effect of
-        publishing the transition to the memory/replay buffer node
+        for param in params:
+            if param.name == "publish_frequency":
+                # Change timer frequency
+                self.timer.cancel()
+                self.create_timer(
+                    1.0 / param.get_parameter_value().double_value, self.timer_callback
+                )
 
-        Args:
-            request (srv.ControllerService.Request): request message received
-            response (srv.ControllerService.Response): response message to send
+        return SetParametersResult(successful=successful, reason=reason)
 
-        --------
-        Returns:
-            srv.ControllerService.Response response message containing the new
-            state in the environment when the requested action is taken; if
-            the environment is truncated or terminated, the state after reset
-            is sent
-        """
-        action = ControllerService.unpack_request(request, type=ActionType)
-        s_1 = self._env_step(action)
-        ControllerService.set_response(response, s_1=s_1)
-        return response
-
-    def _env_step(self, action: ActionType) -> StateType:
-        """Take one step on the included gymnasium environment
-
-        (IMPORTANT, TODO) this function also has the side effect of
-        publishing the transition to the memory/replay buffer node
-
-        Args:
-            action (ActionType): the action requested by the service
-
-
-        --------
-        Returns:
-            The state after the transition is taken; if the environment
-            needs to reset after the action is taken, the state after reset
-            is returned
-        """
-        # Transition
-        if self._first_call:
-            self._first_call = False
-            s_1, _ = self._env.reset()
+    async def timer_callback(self):
+        # Send request for action
+        s_0 = FloatTensor.build(self.s_0).pack()
+        request = srv.PolicyService.Request(s_0=s_0)
+        future = self.policy_client.call_async(request)
+        try:
+            response: srv.PolicyService.Response = await future
+            a = FloatTensor.unpack(response.a)
+        except Exception as e:
+            self.get_logger().warn(str(e))
+        # Step environment
+        a = a.numpy()
+        if a.shape == ():
+            a = int(a)
+        s_1, r, d, t, _ = self.env.step(a)
+        # Pack and send
+        msg = Transition.build((self.s_0, a, r, s_1, d))
+        self.publisher.publish(msg.pack())
+        # Reset env if needed
+        if d or t:
+            self.s_0, _ = self.env.reset()
         else:
-            s_1, reward, terminated, truncated, info = self._env.step(action)
-            # TODO: whenever a step is taken, publish the transition
-            if terminated or truncated:
-                self._env.reset()
-        return s_1
-
-    @property
-    def gym_env_name(self) -> str | None:
-        return self.get_parameter("env_name").get_parameter_value().string_value
+            self.s_0 = s_1
 
 
 def main(args=None):
     rclpy.init(args=args)
-    node = GymController()
+    node = GymController("CartPole")
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()

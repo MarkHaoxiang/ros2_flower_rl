@@ -1,5 +1,3 @@
-from typing import List
-
 import ml_interfaces.msg as msg
 import rclpy
 import torch
@@ -42,7 +40,7 @@ class DatasetPublisher(Node):
         # Build publisher
         self._publisher = self.create_publisher(msg.FeatureLabelPair, "data_stream", 10)
 
-    def parameter_change_callback(self, params: List[rclpy.Parameter]):
+    def parameter_change_callback(self, params: list[rclpy.Parameter]):
         successful = True
         reason = ""
 

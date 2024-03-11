@@ -9,10 +9,14 @@ from toy_fl.nn import MnistClassifier
 
 DATASET = "mnist"
 
+
 def _on_fit_config_fn(server_round: int):
     return {"server_round": server_round}
+
+
 def _on_evaluate_config_fn(server_round: int):
     return {"server_round": server_round}
+
 
 def main():
     # Load Data
@@ -21,6 +25,7 @@ def main():
     cross_entropy_loss = torch.nn.CrossEntropyLoss()
 
     net = MnistClassifier()
+
     def evaluate(server_round: int, parameters: NDArrays, config):
         set_torch_parameters(net, parameters)
         # Run evaluation round
@@ -40,19 +45,20 @@ def main():
         return average_loss, {"accuracy": accuracy}
 
     strategy = fl.server.strategy.FedAvg(
-        on_fit_config_fn = _on_fit_config_fn,
-        on_evaluate_config_fn= _on_evaluate_config_fn,
+        on_fit_config_fn=_on_fit_config_fn,
+        on_evaluate_config_fn=_on_evaluate_config_fn,
         fit_metrics_aggregation_fn=aggregate_weighted_average,
-        evaluate_metrics_aggregation_fn=aggregate_weighted_average, 
+        evaluate_metrics_aggregation_fn=aggregate_weighted_average,
         evaluate_fn=evaluate,
-        accept_failures=False
+        accept_failures=False,
     )
 
     fl.server.start_server(
         server_address="0.0.0.0:8080",
         config=fl.server.ServerConfig(num_rounds=10),
-        strategy=strategy
+        strategy=strategy,
     )
+
 
 if __name__ == "__main__":
     main()

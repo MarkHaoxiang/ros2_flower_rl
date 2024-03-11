@@ -1,6 +1,5 @@
 import rclpy
 from rclpy.node import Node
-import torch
 import gymnasium as gym
 
 import ml_interfaces.msg as msg

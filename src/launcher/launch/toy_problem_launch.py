@@ -92,6 +92,6 @@ def generate_launch_description():
             n_partitions_value_launch_arg,
             downloader_node,
             publisher_nodes,
-            client_nodes
+            client_nodes,
         ]
     )
