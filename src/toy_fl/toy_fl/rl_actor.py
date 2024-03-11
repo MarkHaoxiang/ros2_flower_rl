@@ -4,12 +4,16 @@ import sys
 from abc import ABC, abstractmethod
 from typing import Generic, Type, TypeVar, _GenericAlias, get_args
 
-import ml_interfaces.srv as srv
-import numpy as np
 import rclpy
-import torch
-from ml_interfaces_py import ControllerService
 from rclpy.node import Node
+import ml_interfaces.srv as srv
+import ml_interfaces.msg as msg
+import numpy as np
+import torch
+import kitten
+
+
+from ml_interfaces_py import ControllerService
 
 ActionType = TypeVar("ActionType", np.ndarray, torch.Tensor)  # ActionType
 StateType = TypeVar("StateType", np.ndarray, torch.Tensor)  # StateType
@@ -20,6 +24,9 @@ class RlActor(Generic[ActionType, StateType], Node, ABC):
         Node.__init__(self, f"Reinforcement Learning Actor {node_name}")
         self._client = self.create_client(
             srv_type=srv.ControllerService, srv_name=controller_name
+        )
+        self.memory_client = self.create_client(
+            srv_type=srv.SampleTransition, srv_name=replay_buffer_name
         )
         self._memory = self.create_client(
             srv_type=srv.SampleFeatureLabelPair, srv_name=replay_buffer_name
@@ -71,5 +78,10 @@ class RlActor(Generic[ActionType, StateType], Node, ABC):
     # Requirement: this should return exactly what
     # kitten.experience.memory.ReplayBuffer.sample()
     # returns
-    def sample_request(self, n: int):
-        raise NotImplementedError
+    def sample_request(self, n: int) -> tuple[kitten.experience.Transition, kitten.experience.AuxiliaryMemoryData]:
+        request = srv.SampleTransition.Request(n=n)
+        future = self.memory_client.call_async(request)
+        rclpy.spin_until_future_complete(future)
+        batch: list[msg.Transition] = future.result().batch
+        # batch = [Trans for x in batch]
+
