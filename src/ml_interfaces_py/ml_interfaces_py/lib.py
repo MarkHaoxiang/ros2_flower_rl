@@ -71,12 +71,15 @@ class FloatTensor(msg.FloatTensor):
         if isinstance(data, np.ndarray):
             return FloatTensor(
                 shape=list(data.shape),
-                values=data.flatten().to(device="cpu", dtype=torch.float32).tolist(),
+                values=data.flatten().tolist(),
             )
         elif isinstance(data, torch.Tensor):
             return FloatTensor(shape=list(data.shape), values=data.flatten().tolist())
         else:
-            raise NotImplementedError
+            try:
+                return FloatTensor.build(np.array(data))
+            except:
+                raise NotImplementedError
 
     @staticmethod
     def unpack(msg: msg.FloatTensor) -> FloatTensor:
@@ -120,10 +123,10 @@ class Transition(msg.Transition):
             Transition: ROS Transition message.
         """
         return Transition(
-            s_0 = data[0],
-            a = data[1],
+            s_0 = FloatTensor.build(data[0]),
+            a = FloatTensor.build(data[1]),
             r = data[2],
-            s_1 = data[3],
+            s_1 = FloatTensor.build(data[3]),
             d = data[4]
         )
 
@@ -160,7 +163,7 @@ class Transition(msg.Transition):
             s_0 = self.s_0.pack(),
             a = self.a.pack(),
             r = self.r,
-            s_1 = self.s_1.msg,
+            s_1 = self.s_1.pack(),
             d = self.d
         )
 

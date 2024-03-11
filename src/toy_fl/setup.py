@@ -23,6 +23,7 @@ setup(
             "publisher = toy_fl.dataset_publisher:main",
             "client = toy_fl.client:main",
             "gym_controller = toy_fl.gym_controller:main",
+            "transition_publisher_placeholder = toy_fl.transition_publisher_placeholder:main"
         ],
     },
 )
