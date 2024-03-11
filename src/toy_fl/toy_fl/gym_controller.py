@@ -36,10 +36,8 @@ class GymController(Node):
         env = build_env(name)
         self._first_call = True
         self._env = env
-        self.service = self.create_service(
-            srv.ControllerService,
-            srv_name=srv_name,
-            callback=self.on_action_callback,
+        self._client = self.create_client(
+            srv_type=srv.ControllerService, srv_name=controller_name
         )
 
     def on_action_callback(

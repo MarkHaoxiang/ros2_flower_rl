@@ -7,10 +7,9 @@ import ml_interfaces.msg as msg
 from ml_interfaces_py import Transition
 
 
-
 class TransitionPublisherPlaceholder(Node):
-    """ Publishes random transitions as an utility to help test replay_buffer
-    
+    """Publishes random transitions as an utility to help test replay_buffer
+
     Equivalent to a simple version of early_start: randomly exploring in the environment
     """
 
@@ -33,9 +32,7 @@ class TransitionPublisherPlaceholder(Node):
         s_1, r, d, t, _ = self.env.step(a)
 
         # Pack and send
-        msg = Transition.build(
-            (self.s_0, a, r, s_1, d)
-        )
+        msg = Transition.build((self.s_0, a, r, s_1, d))
         self._publisher.publish(msg.pack())
 
         # Reset env if needed
@@ -43,6 +40,7 @@ class TransitionPublisherPlaceholder(Node):
             self.s_0, _ = self.env.reset()
         else:
             self.s_0 = s_1
+
 
 def main(args=None):
     rclpy.init(args=args)

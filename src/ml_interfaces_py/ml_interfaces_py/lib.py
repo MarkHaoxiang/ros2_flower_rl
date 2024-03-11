@@ -169,9 +169,10 @@ class Transition(msg.Transition):
 
 class ControllerService(srv.ControllerService):
     @staticmethod
-    def build_request(
+    def set_response(
+        response: srv.ControllerService.Response,
         action: Union[np.ndarray, torch.Tensor, FloatTensor, msg.FloatTensor],
-    ) -> srv.ControllerService.Request:
+        ) -> None:
         """Builds a gym service request
 
         Args:
@@ -183,18 +184,35 @@ class ControllerService(srv.ControllerService):
             srv.ControllerService.Request The request to be sent to the server
         """
         # TODO: check if we can omit certain fields in the request
-        request = srv.ControllerService.Request()
-        if not isinstance(action, FloatTensor, msg.FloatTensor):
+        if not isinstance(action, (FloatTensor, msg.FloatTensor)):
             action = FloatTensor.build(action)
         if not isinstance(action, msg.FloatTensor):
             action = action.pack()
-        request.action = action
-        return request
+        response.action = action
 
     @staticmethod
-    def unpack_request(
-        request: srv.ControllerService.Request, type: Optional[Type] = None
-    ) -> Tuple[Union[FloatTensor, np.ndarray, torch.Tensor], bool]:
+    def build_response(
+        action: Union[np.ndarray, torch.Tensor, FloatTensor, msg.FloatTensor],
+    ) -> srv.ControllerService.Response:
+        """Builds a gym service request
+
+        Args:
+            action (np.ndarray | torch.Tensor | FloatTensor | msg.FloatTensor): the action proposed by gym client
+            reset (bool): whether this request is a reset request
+
+        -------
+        Returns:
+            srv.ControllerService.Request The request to be sent to the server
+        """
+        # TODO: check if we can omit certain fields in the request
+        response = srv.ControllerService.Response()
+        ControllerService.set_response(response, action)
+        return response
+
+    @staticmethod
+    def unpack_response(
+        response: srv.ControllerService.Request, type: Optional[Type] = None
+        ) -> Union[FloatTensor, np.ndarray, torch.Tensor]:
         """Unpacks a ControllerService Request
         Args:
             request (srv.ControllerService.Request)
@@ -205,7 +223,7 @@ class ControllerService(srv.ControllerService):
             the action and whether the request is for a reset; if the request is
             a reset, the action would be empty
         """
-        action = FloatTensor.unpack(request.action)
+        action = FloatTensor.unpack(response.action)
         if type is torch.Tensor:
             action = action.torch()
         elif type is np.ndarray:
@@ -213,10 +231,9 @@ class ControllerService(srv.ControllerService):
         return action
 
     @staticmethod
-    def set_response(
-        response: srv.ControllerService.Response,
+    def set_request(
+        request: srv.ControllerService.Request,
         s_1: Union[msg.FloatTensor, FloatTensor, torch.Tensor, np.ndarray],
-        info: Optional[FloatTensor] = None,
     ) -> None:
         """Sets the content of a ControllerService response
 
@@ -231,16 +248,16 @@ class ControllerService(srv.ControllerService):
         # TODO: check if we can omit certain fields in the request
 
         # Convert float tensor input to message float tensor
-        if not isinstance(s_1, FloatTensor, msg.FloatTensor):
+        if not isinstance(s_1, (FloatTensor, msg.FloatTensor)):
             s_1 = FloatTensor.build(s_1)
         if not isinstance(s_1, msg.FloatTensor):
             s_1 = s_1.pack()
 
-        response.s_1 = s_1
-        return response
+        request.s_1 = s_1
+        return request
 
     @staticmethod
-    def build_response(*args, **kwargs) -> srv.ControllerService.Response:
+    def build_request(*args, **kwargs) -> srv.ControllerService.Response:
         """Builds a gym service response
 
         Since we are using callbacks, this is probably unused
@@ -252,14 +269,14 @@ class ControllerService(srv.ControllerService):
         Returns:
             srv.ControllerService.Response The request to be sent to the server
         """
-        response: srv.ControllerService.Response = srv.ControllerService.Response()
-        ControllerService.set_response(response, *args, **kwargs)
-        return response
+        request: srv.ControllerService.Response = srv.ControllerService.Request()
+        ControllerService.set_response(request, *args, **kwargs)
+        return request
 
     @staticmethod
-    def unpack_response(
-        response: srv.ControllerService.Response, state_type: Optional[Type] = None
-    ) -> Tuple[Union[FloatTensor, torch.Tensor, np.ndarray], FloatTensor]:
+    def unpack_request(
+        request: srv.ControllerService.Request, state_type: Optional[Type] = None
+        ) -> Union[FloatTensor, torch.Tensor, np.ndarray]:
         """Unpacks response from ControllerService
 
         Args:
@@ -270,7 +287,7 @@ class ControllerService(srv.ControllerService):
         Returns:
             state (FloatTensor, Tensor or NDArray depending on state type),
         """
-        s_1 = FloatTensor.unpack(response.s_1)
+        s_1 = FloatTensor.unpack(request.s_1)
         if state_type is not None:
             if state_type is torch.Tensor:
                 s_1 = s_1.torch()

@@ -20,23 +20,22 @@ StateType = TypeVar("StateType", np.ndarray, torch.Tensor)  # StateType
 
 
 class RlActor(Generic[ActionType, StateType], Node, ABC):
-    def __init__(self, node_name: str, controller_name: str, replay_buffer_name: str):
+    def __init__(self, node_name: str, srv_name: str, replay_buffer_name: str):
         Node.__init__(self, f"Reinforcement Learning Actor {node_name}")
-        self._client = self.create_client(
-            srv_type=srv.ControllerService, srv_name=controller_name
+        self.service = self.create_service(
+            srv.ControllerService,
+            srv_name=srv_name,
+            callback=self.on_request_callback,
         )
         self.memory_client = self.create_client(
             srv_type=srv.SampleTransition, srv_name=replay_buffer_name
-        )
-        self._memory = self.create_client(
-            srv_type=srv.SampleFeatureLabelPair, srv_name=replay_buffer_name
         )
 
     @property
     def _action_type(self) -> Type:
         """This hack should (no tested) return the
         instantiated ActionType in derived class"""
-        original_bases = type(self).__orig_bases__
+        original_bases = type(self).__orig_bases__  # type: ignore
         for base in original_bases:
             if isinstance(base, _GenericAlias):
                 concrete_action_type = get_args(base)[0]
@@ -47,35 +46,34 @@ class RlActor(Generic[ActionType, StateType], Node, ABC):
     def _state_type(self) -> Type:
         """This hack should (no tested) return the
         instantiated StateType in derived class"""
-        original_bases = type(self).__orig_bases__
+        original_bases = type(self).__orig_bases__  # type: ignore
         for base in original_bases:
             if isinstance(base, _GenericAlias):
                 concrete_action_type = get_args(base)[1]
                 return concrete_action_type
         raise NotImplementedError("State Type is Not Correctly Instantiated")
 
-    def action_request(self, action: ActionType) -> StateType:
-        try:
-            future = self._client.call_async(ControllerService.build_request(action))
-        except TypeError:
-            raise TypeError(
-                "Action Passed in may not have the right type"
-                "expect: Union[FloatTensor, torch.Tensor, numpy.NDarray]"
-                f"Got {type(action)}"
-            )
+    def on_request_callback(
+        self,
+        request: srv.ControllerService.Request,
+        response: srv.ControllerService.Response,
+    ) -> srv.ControllerService.Response:
+        obs: StateType = ControllerService.unpack_request(
+            request, state_type=self._state_type
+        )
+        action: ActionType = self.policy(obs)
+        ControllerService.set_response(response, action=action)
+        return response
 
-        try:
-            rclpy.spin_until_future_complete(self, future)
-            result = future.result()
-            assert isinstance(result, srv.ControllerService.Response)
-        except Exception as e:
-            print(f"An unexpected error occured on controller server's side: {e}")
-            sys.exit(1)
-        else:
-            return ControllerService.unpack_response(result, self._state_type)
+    @property
+    @abstractmethod
+    def policy(self) -> kitten.policy.Policy:
+        raise NotImplementedError
 
-    def sample_request(self, n: int) -> tuple[kitten.experience.Transition, kitten.experience.AuxiliaryMemoryData]:
-        """ Samples a batch from memory
+    def sample_request(
+        self, n: int
+    ) -> tuple[kitten.experience.Transition, kitten.experience.AuxiliaryMemoryData]:
+        """Samples a batch from memory
 
         Args:
             n (int): minibatch size.
@@ -92,7 +90,6 @@ class RlActor(Generic[ActionType, StateType], Node, ABC):
         aux = kitten.experience.AuxiliaryMemoryData(
             weights=torch.ones(len(batch.s_0), batch.s_0.get_device()),
             random=None,
-            indices=None
+            indices=None,
         )
         return batch, aux
-
