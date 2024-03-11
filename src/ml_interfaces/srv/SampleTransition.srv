@@ -1,0 +1,6 @@
+# Request response to sample a batch of training data for reinforcement learning
+# Request
+int64 n                    # Number of Samples
+---
+# Response
+Transition[] batch         # Batch of transition
