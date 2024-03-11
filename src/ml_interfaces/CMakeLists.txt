@@ -27,6 +27,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Transition.msg"
   "srv/ControllerService.srv"
   "srv/SampleFeatureLabelPair.srv"
+  "srv/SampleTransition.srv"
 )
 
 ament_package()

@@ -18,8 +18,12 @@ find_package(ml_interfaces REQUIRED)
 add_executable(supervised_memory src/supervised_replay_buffer.cpp)
 ament_target_dependencies(supervised_memory rclcpp ml_interfaces)
 
+add_executable(transition_memory src/transition_replay_buffer.cpp)
+ament_target_dependencies(transition_memory rclcpp ml_interfaces)
+
 install(TARGETS
   supervised_memory
+  transition_memory
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

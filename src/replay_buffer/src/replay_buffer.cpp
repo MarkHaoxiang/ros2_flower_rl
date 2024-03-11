@@ -16,6 +16,7 @@ class ReplayBuffer : public rclcpp::Node
 public:
     ReplayBuffer() : Node("replay_buffer")
     {
+        RCLCPP_INFO(this->get_logger(), "Starting replay_buffer!");
         auto size_desc = rcl_interfaces::msg::ParameterDescriptor{};
         size_desc.description = "Maximum number of elements in the Replay Buffer";
         this->declare_parameter("size", 1024);
@@ -100,7 +101,7 @@ private:
     {
         RCLCPP_INFO(this->get_logger(), "Sampling Service Requested");
         size_t n = static_cast<size_t>(request->n);
-        RCLCPP_INFO(this->get_logger(), "%d", n);
+        // RCLCPP_INFO(this->get_logger(), "%d", n);
         if (n > this->memory.size())
         {
             n = this->memory.size();
