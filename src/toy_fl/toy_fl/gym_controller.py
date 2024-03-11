@@ -40,6 +40,7 @@ class GymController(Node):
 
         name = self.gym_env_name
         env = build_env(name)
+        self._first_call = True
         self._env = env
         self.service = self.create_service(
             srv.ControllerService,
@@ -90,10 +91,14 @@ class GymController(Node):
             is returned
         """
         # Transition
-        s_1, reward, terminated, truncated, info = self._env.step(action)
-        # TODO: whenever a step is taken, publish the transition
-        if terminated or truncated:
-            self._env.reset()
+        if self._first_call:
+            self._first_call = False
+            s_1, _ = self._env.reset()
+        else:
+            s_1, reward, terminated, truncated, info = self._env.step(action)
+            # TODO: whenever a step is taken, publish the transition
+            if terminated or truncated:
+                self._env.reset()
         return s_1
 
     @property

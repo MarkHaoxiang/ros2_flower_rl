@@ -1,42 +1,34 @@
 from __future__ import annotations
 
+import sys
 from abc import ABC, abstractmethod
-
-from typing import Type, Generic, TypeVar, get_args
-from typing import _GenericAlias
-
-import rclpy
-from rclpy.node import Node
+from typing import Generic, Type, TypeVar, _GenericAlias, get_args
 
 import ml_interfaces.srv as srv
-from ml_interfaces_py import ControllerService
-
-import sys
-
-
 import numpy as np
+import rclpy
 import torch
+from ml_interfaces_py import ControllerService
+from rclpy.node import Node
 
-ActionType = TypeVar("ActionType", np.ndarray, torch.Tensor) # ActionType
-StateType = TypeVar("StateType", np.ndarray, torch.Tensor) # StateType
+ActionType = TypeVar("ActionType", np.ndarray, torch.Tensor)  # ActionType
+StateType = TypeVar("StateType", np.ndarray, torch.Tensor)  # StateType
+
 
 class RlActor(Generic[ActionType, StateType], Node, ABC):
-    def __init__(
-        self,
-        node_name: str,
-        controller_name: str,
-        replay_buffer_name: str
-    ):
+    def __init__(self, node_name: str, controller_name: str, replay_buffer_name: str):
         Node.__init__(self, f"Reinforcement Learning Actor {node_name}")
         self._client = self.create_client(
             srv_type=srv.ControllerService, srv_name=controller_name
         )
-        self._memory=self.create_client(
+        self._memory = self.create_client(
             srv_type=srv.SampleFeatureLabelPair, srv_name=replay_buffer_name
         )
 
     @property
     def _action_type(self) -> Type:
+        """This hack should (no tested) return the
+        instantiated ActionType in derived class"""
         original_bases = type(self).__orig_bases__
         for base in original_bases:
             if isinstance(base, _GenericAlias):
@@ -44,16 +36,16 @@ class RlActor(Generic[ActionType, StateType], Node, ABC):
                 return concrete_action_type
         raise NotImplementedError("State Type is Not Correctly Instantiated")
 
-
     @property
     def _state_type(self) -> Type:
+        """This hack should (no tested) return the
+        instantiated StateType in derived class"""
         original_bases = type(self).__orig_bases__
         for base in original_bases:
             if isinstance(base, _GenericAlias):
                 concrete_action_type = get_args(base)[1]
                 return concrete_action_type
         raise NotImplementedError("State Type is Not Correctly Instantiated")
-
 
     def action_request(self, action: ActionType) -> StateType:
         try:
@@ -74,7 +66,6 @@ class RlActor(Generic[ActionType, StateType], Node, ABC):
             sys.exit(1)
         else:
             return ControllerService.unpack_response(result, self._state_type)
-
 
     # TODO: Please implement the replay buffen sample
     # Requirement: this should return exactly what
