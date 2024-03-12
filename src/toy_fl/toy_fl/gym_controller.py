@@ -3,18 +3,12 @@
 import gymnasium as gym
 import ml_interfaces.msg as msg
 import ml_interfaces.srv as srv
-import numpy as np
 import rclpy
 from ml_interfaces_py import FloatTensor, Transition
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
-
-# TODO: put this in a centralized place to retain consistency
-# between client and server
-ActionType = np.ndarray
-StateType = np.ndarray
-
+from gym_sim.common import POLICY_SERVICE, POLICY_UPDATE_TOPIC
 
 class GymController(Node):
     """A robot controller simulating an Gymnasium RL Environment"""
@@ -31,13 +25,16 @@ class GymController(Node):
 
         # Build Policy client
         self.policy_client = self.create_client(
-            srv_type=srv.PolicyService, srv_name="policy", callback_group=self.cb_group
+            srv_type=srv.PolicyService, srv_name=POLICY_SERVICE, callback_group=self.cb_group
         )
         while not self.policy_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("Policy service not available... waiting")
 
         # Transition publisher
-        self.publisher = self.create_publisher(msg.Transition, "observations", 10)
+        self.publisher = self.create_publisher(
+            msg_type=msg.Transition, topic=POLICY_UPDATE_TOPIC, qos_profile=10
+        )
+        self.get_logger().info("Transition/Memory buffer publisher started")
 
         # Environment step frequency
         self.declare_parameter("publish_frequency", 10.0)

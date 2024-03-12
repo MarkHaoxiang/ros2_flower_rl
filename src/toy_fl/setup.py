@@ -25,6 +25,8 @@ setup(
             "gym_controller = toy_fl.gym_controller:main",
             "transition_publisher_placeholder = toy_fl.placeholder.transition_publisher_placeholder:main",
             "policy_placeholder = toy_fl.placeholder.policy_placeholder:main",
+            "dqn_actor = toy_fl.gym_sim.dqn.dqn_actor:main",
+            "dqn_client = toy_fl.gym_sim.dqn.dqn_client:main",
         ],
     },
 )

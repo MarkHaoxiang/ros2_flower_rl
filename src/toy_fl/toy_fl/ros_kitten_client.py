@@ -62,6 +62,9 @@ class RosKittenClient(FlorlClient, Node, ABC):
             srv_name=replay_buffer_service,
             callback_group=self._cb_group,
         )
+        while not self.memory_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info("Replay Bufferr Service not available, waiting; communication dependent on this: policy_publisher")
+
         self.policy_publisher = self.create_publisher(
             msg_type=msg.Knowledge,
             topic=policy_update_topic,

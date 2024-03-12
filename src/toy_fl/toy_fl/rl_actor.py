@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from abc import ABC, abstractmethod
-from typing import Generic, Type, TypeVar, _GenericAlias, get_args
+from typing import Generic, Type, TypeVar, get_args, _GenericAlias
 
 import kitten
 import ml_interfaces.msg as msg
@@ -22,6 +22,13 @@ class RlActor(Generic[ActionType, StateType], Node, ABC):
     def __init__(self, node_name: str, policy_service: str, policy_update_topic: str):
         Node.__init__(self, f"Reinforcement Learning Actor {node_name}")
         self._cb_group = MutuallyExclusiveCallbackGroup()
+        self.service = self.create_service(
+            srv.PolicyService,
+            srv_name=policy_service,
+            callback=self.on_request_callback,
+            callback_group=self._cb_group,
+        )
+        self.get_logger().info("Policy service initiated")
         self.subscription = self.create_subscription(
             msg_type=msg.Knowledge,
             topic=policy_update_topic,
@@ -29,12 +36,7 @@ class RlActor(Generic[ActionType, StateType], Node, ABC):
             qos_profile=10,
             callback_group=self._cb_group,
         )
-        self.service = self.create_service(
-            srv.PolicyService,
-            srv_name=policy_service,
-            callback=self.on_request_callback,
-            callback_group=self._cb_group,
-        )
+        self.get_logger().info("Policy update subscription initiated")
 
     @property
     def _action_type(self) -> Type:
