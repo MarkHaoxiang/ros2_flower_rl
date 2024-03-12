@@ -1,23 +1,19 @@
 # ruff: noqa: F401
 
+import gymnasium as gym
 import ml_interfaces.msg as msg
 import ml_interfaces.srv as srv
-import rclpy
-from rclpy.node import Node
-from rclpy.callback_groups import ReentrantCallbackGroup
-from rcl_interfaces.msg import SetParametersResult
-
 import numpy as np
-import gymnasium as gym
-
-import ml_interfaces.srv as srv
+import rclpy
 from ml_interfaces_py import FloatTensor, Transition
+from rcl_interfaces.msg import SetParametersResult
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.node import Node
 
 # TODO: put this in a centralized place to retain consistency
 # between client and server
 ActionType = np.ndarray
 StateType = np.ndarray
-srv_name = "gym_environment"
 
 
 class GymController(Node):
@@ -66,7 +62,6 @@ class GymController(Node):
                 self.create_timer(
                     1.0 / param.get_parameter_value().double_value, self.timer_callback
                 )
-
         return SetParametersResult(successful=successful, reason=reason)
 
     async def timer_callback(self):

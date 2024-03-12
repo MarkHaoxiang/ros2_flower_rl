@@ -4,29 +4,36 @@ import sys
 from abc import ABC, abstractmethod
 from typing import Generic, Type, TypeVar, _GenericAlias, get_args
 
-import rclpy
-from rclpy.node import Node
-import ml_interfaces.srv as srv
-import ml_interfaces.msg as msg
-from ml_interfaces_py import FloatTensor
-import numpy as np
-import torch
 import kitten
-
-
-from ml_interfaces_py import Transition
+import ml_interfaces.msg as msg
+import ml_interfaces.srv as srv
+import numpy as np
+import rclpy
+import torch
+from ml_interfaces_py import FloatTensor, Transition
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.node import Node
 
 ActionType = TypeVar("ActionType", np.ndarray, torch.Tensor)  # ActionType
 StateType = TypeVar("StateType", np.ndarray, torch.Tensor)  # StateType
 
 
 class RlActor(Generic[ActionType, StateType], Node, ABC):
-    def __init__(self, node_name: str, srv_name: str, replay_buffer_name: str):
+    def __init__(self, node_name: str, policy_service: str, policy_update_topic: str):
         Node.__init__(self, f"Reinforcement Learning Actor {node_name}")
+        self._cb_group = MutuallyExclusiveCallbackGroup()
+        self.subscription = self.create_subscription(
+            msg_type=msg.Knowledge,
+            topic=policy_update_topic,
+            callback=self.update_policy,
+            qos_profile=10,
+            callback_group=self._cb_group,
+        )
         self.service = self.create_service(
             srv.PolicyService,
-            srv_name=srv_name,
+            srv_name=policy_service,
             callback=self.on_request_callback,
+            callback_group=self._cb_group,
         )
 
     @property
@@ -38,7 +45,7 @@ class RlActor(Generic[ActionType, StateType], Node, ABC):
             if isinstance(base, _GenericAlias):
                 concrete_action_type = get_args(base)[0]
                 return concrete_action_type
-        raise NotImplementedError("State Type is Not Correctly Instantiated")
+        raise NotImplementedError("Action Type is Not Correctly Instantiated")
 
     @property
     def _state_type(self) -> Type:
@@ -60,6 +67,11 @@ class RlActor(Generic[ActionType, StateType], Node, ABC):
         action: ActionType = self.policy(obs)
         response.a = FloatTensor.build(action).pack()
         return response
+
+    @abstractmethod
+    def update_policy(self, msg: msg.Knowledge) -> None:
+        """Updates the policy function from arguments passed in"""
+        raise NotImplementedError
 
     @property
     @abstractmethod

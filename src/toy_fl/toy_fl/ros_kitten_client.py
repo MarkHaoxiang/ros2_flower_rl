@@ -5,18 +5,20 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import Any, Dict, List, Tuple
 
-import rclpy
 import kitten
 import numpy as np
+import rclpy
 import torch
 from florl.client.client import FlorlClient
 from florl.common import Knowledge
 from flwr.common.typing import Config, GetParametersIns, GetParametersRes, Scalar
 from gymnasium.spaces import Space
-from ml_interfaces import srv as srv
-from ml_interfaces import msg as msg
-from ml_interfaces_py import Transition
 from kitten.experience import AuxiliaryMemoryData
+from ml_interfaces import msg as msg
+from ml_interfaces import srv as srv
+from ml_interfaces_py import RosKnowledge, Transition
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.node import Node
 
 from rl_actor import RlActor
 
@@ -24,12 +26,12 @@ action_type = np.ndarray
 state_type = np.ndarray
 
 
-class RosKittenClient(FlorlClient, RlActor[np.ndarray, np.ndarray], ABC):
+class RosKittenClient(FlorlClient, Node, ABC):
     def __init__(
         self,
         node_name: str,
-        controller_name: str,
-        replay_buffer_name: str,
+        replay_buffer_service: str,
+        policy_update_topic: str,
         knowledge: Knowledge,
         action_space: Space[Any],
         config: Config,
@@ -39,7 +41,7 @@ class RosKittenClient(FlorlClient, RlActor[np.ndarray, np.ndarray], ABC):
     ):
         # Note currently we cannot support client side evaluation
         FlorlClient.__init__(self, knowledge, enable_evaluation)
-        RlActor.__init__(self, node_name, controller_name, replay_buffer_name)
+        Node.__init__(self, node_name=node_name)  # type: ignore
         self._knowl = knowledge
         self._seed = (
             seed if seed else 0
@@ -52,16 +54,19 @@ class RosKittenClient(FlorlClient, RlActor[np.ndarray, np.ndarray], ABC):
         # Logging
         self._rng = kitten.common.global_seed(self._seed)
 
-        # RL Modules
-        # For initialisation
-        self._obs = np.empty(0, np.float32)
-        self.take_step(n=1, init=True)  # Take first step, initialises the environment
-
-        self._step_cnt = 0
         self._build_algorithm()
 
+        self._cb_group = ReentrantCallbackGroup()
         self.memory_client = self.create_client(
-            srv_type=srv.SampleTransition, srv_name=replay_buffer_name
+            srv_type=srv.SampleTransition,
+            srv_name=replay_buffer_service,
+            callback_group=self._cb_group,
+        )
+        self.policy_publisher = self.create_publisher(
+            msg_type=msg.Knowledge,
+            topic=policy_update_topic,
+            qos_profile=10,
+            callback_group=self._cb_group,
         )
 
     def train(self, config: Config) -> Tuple[int, Dict[str, Scalar]]:
@@ -71,12 +76,15 @@ class RosKittenClient(FlorlClient, RlActor[np.ndarray, np.ndarray], ABC):
         # Training
         for _ in range(int(config["frames"])):
             # Collected Transitions
+            self._step += 1  # WARNING: Check if this is the intended behaviour
             num_samples = int(self._cfg["train"]["minibatch_size"])  # type: ignore
             # TODO: Deal with async...
             # TODO: Return Flower failure if not enough samples
             batch, aux = self.sample_request(num_samples)
             # Algorithm Update
             critic_loss.append(self.algorithm.update(batch, aux, self.step))
+
+        self.publish_knowledge(self._knowl)
 
         # Logging
         metrics["loss"] = sum(critic_loss) / len(critic_loss)
@@ -86,7 +94,7 @@ class RosKittenClient(FlorlClient, RlActor[np.ndarray, np.ndarray], ABC):
         return FlorlClient.get_parameters(self, ins)
 
     def get_ros_parameter(self, names: List[str]):
-        return RlActor[np.ndarray, np.ndarray].get_parameters(self, names)
+        return Node.get_parameters(self, names)
 
     @property
     def step(self) -> int:
@@ -111,7 +119,7 @@ class RosKittenClient(FlorlClient, RlActor[np.ndarray, np.ndarray], ABC):
     @abstractmethod
     def policy(self) -> kitten.policy.Policy:
         raise NotImplementedError
-    
+
     async def sample_request(
         self, n: int
     ) -> tuple[kitten.experience.Transition, kitten.experience.AuxiliaryMemoryData]:
@@ -141,3 +149,6 @@ class RosKittenClient(FlorlClient, RlActor[np.ndarray, np.ndarray], ABC):
         )
         return batch, aux
 
+    def publish_knowledge(self, knowledge: Knowledge) -> None:
+        msg = RosKnowledge.pack(knowledge)
+        self.policy_publisher.publish(msg)
