@@ -25,6 +25,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/FloatTensor.msg"
   "msg/FeatureLabelPair.msg"
   "msg/Transition.msg"
+  "msg/KnowledgeShard.msg"
+  "msg/Knowledge.msg"
   "srv/PolicyService.srv"
   "srv/SampleFeatureLabelPair.srv"
   "srv/SampleTransition.srv"

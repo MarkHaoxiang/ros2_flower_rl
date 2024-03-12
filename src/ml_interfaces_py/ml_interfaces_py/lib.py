@@ -7,6 +7,9 @@ import numpy as np
 import ml_interfaces.msg as msg
 import ml_interfaces.srv as srv
 
+import florl
+from flwr.common.parameter import parameters_to_ndarrays, ndarrays_to_parameters
+
 # Typing utility
 Tensor = torch.Tensor | np.ndarray
 
@@ -169,3 +172,27 @@ class Transition(msg.Transition):
             s_1=self.s_1.pack(),
             d=self.d,
         )
+
+class RosKnowledgeShard(msg.KnowledgeShard):
+    @staticmethod
+    def pack(shard: florl.common.knowledge.KnowledgeShard) -> msg.KnowledgeShard:
+        assert shard.parameters is not None
+        parameters = [FloatTensor.build(arr) for arr in parameters_to_ndarrays(shard.parameters)]
+        return msg.KnowledgeShard(name=shard.name, parameters=parameters)
+
+    @staticmethod
+    def unpack(msg: msg.KnowledgeShard) -> florl.common.knowledge.KnowledgeShard:
+        parameters = ndarrays_to_parameters([FloatTensor.unpack(t).numpy() for t in msg.parameters])
+        return florl.common.knowledge.KnowledgeShard(name=msg.name, parameters=parameters)
+
+class RosKnowledge(msg.Knowledge):
+    @staticmethod
+    def unpack_to_shards(msg: msg.Knowledge):
+        return [RosKnowledgeShard.unpack(shard) for shard in msg.knowledge]
+
+    @staticmethod
+    def pack(knowledge: florl.common.knowledge.Knowledge) -> msg.Knowledge:
+        shards = [RosKnowledgeShard.pack(shard) for name, shard in knowledge._shards_registry.items()]
+        return msg.Knowledge(knowledge=shards)
+    
+

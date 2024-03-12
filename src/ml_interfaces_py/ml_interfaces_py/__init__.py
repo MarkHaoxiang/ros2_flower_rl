@@ -1,1 +1,1 @@
-from .lib import FloatTensor, FeatureLabelPair, Transition
+from .lib import FloatTensor, FeatureLabelPair, Transition, RosKnowledge, RosKnowledgeShard
