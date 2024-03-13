@@ -1,6 +1,6 @@
 # ruff: noqa: F401
 
-from typing import Any, Callable, Tuple, Type
+from typing import Callable
 from copy import deepcopy
 
 from florl.common import Knowledge
@@ -14,8 +14,8 @@ from ml_interfaces import msg, srv
 from ml_interfaces_py import FloatTensor, RosKnowledge
 import rclpy
 
-from rl_actor import RlActor
-from ros_kitten_client import RosKittenClient
+from toy_frl.frl_policy import RlActor
+from toy_frl.frl_client import RosKittenClient
 
 import common
 

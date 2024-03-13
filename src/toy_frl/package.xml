@@ -1,14 +1,11 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>toy_fl</name>
+  <name>toy_frl</name>
   <version>0.0.0</version>
-  <description>Publishes toy federated learning datasets as a simulated sensor</description>
+  <description>Runs federated reinforcement learning</description>
   <maintainer email="mark.haoxiang@gmail.com">markhaoxiang</maintainer>
   <license>Apache-2.0</license>
-
-  <exec_depend>rclpy</exec_depend>
-  <exec_depend>ml_interfaces</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

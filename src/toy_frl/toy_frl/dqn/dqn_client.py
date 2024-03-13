@@ -12,7 +12,7 @@ from flwr.common.typing import Config
 from gymnasium.spaces import Space
 import rclpy
 
-from ros_kitten_client import RosKittenClient
+from toy_frl.toy_frl.frl_client import RosKittenClient
 
 import common
 

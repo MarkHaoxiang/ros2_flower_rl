@@ -8,7 +8,7 @@ from ml_interfaces_py import FloatTensor, Transition
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
-from gym_sim.common import POLICY_SERVICE, POLICY_UPDATE_TOPIC
+from toy_frl.dqn.common import POLICY_SERVICE, POLICY_UPDATE_TOPIC
 
 class GymController(Node):
     """A robot controller simulating an Gymnasium RL Environment"""
