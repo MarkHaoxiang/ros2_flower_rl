@@ -5,7 +5,7 @@
   <version>0.0.0</version>
   <description>Utility wrappers on ml_interfaces messages.</description>
   <maintainer email="mark.haoxiang@gmail.com">markhaoxiang</maintainer>
-  <license>TODO: License declaration</license>
+  <license>Apache-2.0</license>
 
   <exec_depend>ml_interfaces</exec_depend>
 
