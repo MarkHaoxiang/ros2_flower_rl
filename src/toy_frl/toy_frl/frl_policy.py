@@ -66,6 +66,7 @@ class RlActor(Generic[ActionType, StateType], Node, ABC):
         response: srv.PolicyService.Response,
     ) -> srv.PolicyService.Response:
         obs = FloatTensor.unpack(request.s_0).torch()
+        self.get_logger().info(f"received observation {obs}")
         action: ActionType = self.policy(obs)
         response.a = FloatTensor.build(action).pack()
         return response

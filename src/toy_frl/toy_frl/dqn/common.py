@@ -27,7 +27,7 @@ SERVER_ADDR = "[::]:8080"
 config = {
     "rl": {
         "env": {
-            "name": "Pendulum-v1"
+            "name": "CartPole-v1"
         },
         "algorithm": {
             "gamma": 0.99,

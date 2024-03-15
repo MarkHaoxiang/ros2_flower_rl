@@ -208,13 +208,14 @@ class RosClientWrapper(fl.client.Client):
 
 def main(args=None):
     rclpy.init(args=args)
-    algorithm, policy = common.build_dqn_algorithm(cfg=common.config, knowledge=common.default_knowledge_fn(), action_space=common.action_space, seed=common.SEED, device="cpu")
+    knowledge = common.default_knowledge_fn()
+    algorithm, policy = common.build_dqn_algorithm(cfg=common.config, knowledge=knowledge, action_space=common.action_space, seed=common.SEED, device="cpu")
     node = DQNRosClient(node_name="dqn_actor",
                         replay_buffer_service=common.MEMORY_SERVICE,
                         policy_update_topic=common.POLICY_UPDATE_TOPIC,
                         algorithm=algorithm,
                         policy=policy,
-                        knowledge=common.default_knowledge_fn())
+                        knowledge=knowledge)
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
