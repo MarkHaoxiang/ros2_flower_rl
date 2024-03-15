@@ -9,6 +9,7 @@ from flwr.common.logger import log
 from flwr.common.typing import (Code, FitIns, FitRes, GetParametersIns,
                                 GetParametersRes, Parameters, Status)
 from rclpy.node import Node
+from rclpy.callback_groups import ReentrantCallbackGroup
 
 # TODO: Configuration of training parameters
 BATCH_SIZE = 16
@@ -41,10 +42,12 @@ class ToyClient(Node):
         super().__init__("toy_client")
         self.get_logger().info(f"Building client {self.get_fully_qualified_name()}")
 
+        self._cb_group = ReentrantCallbackGroup()
         self._subscriber = self.create_subscription(
             msg_type=msg.FeatureLabelPair,
             topic="data_stream",
             callback=self.listener_callback,
+            callback_group=self._cb_group,
             qos_profile=10,
         )
         self._server_addr = server_addr
@@ -130,6 +133,7 @@ class ToyClient(Node):
                 grpc_max_message_length=grpc_max_message_length,
                 load_client_app_fn=load_client_app_fn,
             ),
+            callback_group=self._cb_group,
         )
         self.get_logger().info("Client Manager Timer started")
 
@@ -161,6 +165,7 @@ class ToyClient(Node):
                     callback=lambda: self.timed_message_callback(
                         receive=receive, send=send, load_client_app_fn=load_client_app_fn
                     ),
+                    callback_group=self._cb_group,
                 )
         elif timer_running(self._train_timer) and self._training_ended:
             self.conn.__exit__(None, None, None)
@@ -194,10 +199,8 @@ class ToyClient(Node):
         # Register context for this run
         self.node_state.register_context(run_id=message.metadata.run_id)
         # Retrieve context for this run
-        context = self.node_state.retrieve_context(run_id=message.metadata.run_id)
-        # Load ClientApp instance
-        client_app: ClientApp = load_client_app_fn()
-        # Handle task message
+        context = self.node_self.get_logger().info.retrieve_context(run_id=message.metadata.run_id)
+        cself.get_logger().info: ClientApp = load_client_app_fn()
         out_message = client_app(message=message, context=context)
         self.get_logger().info("Out message is ready")
         # Update node state
