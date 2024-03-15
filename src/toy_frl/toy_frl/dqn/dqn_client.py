@@ -12,7 +12,7 @@ from flwr.common.typing import Config
 from gymnasium.spaces import Space
 import rclpy
 
-from toy_frl.toy_frl.frl_client import RosKittenClient
+from ..frl_client import RosKittenClient
 
 import common
 
@@ -22,26 +22,19 @@ class DQNRosClient(RosKittenClient):
         node_name: str,
         replay_buffer_service: str,
         policy_update_topic: str,
+        algorithm: kitten.rl.Algorithm,
+        policy: kitten.policy.Policy,
         knowledge: Knowledge,
-        action_space: Space[Any],
-        config: Config,
-        algorithm_factory_fn: Callable,
-        seed: int | None = None,
-        enable_evaluation: bool = False,
+        # action_space: Space[Any],
         device: str = "cpu",
     ):
-        self._policy_factory = lambda knowledge: algorithm_factory_fn(
-            config, knowledge, action_space, seed, device
-        )
+        self._policy = policy
         super().__init__(
             node_name,
             replay_buffer_service,
             policy_update_topic,
+            algorithm,
             knowledge,
-            action_space,
-            config,
-            seed,
-            enable_evaluation,
             device,
         )
 
@@ -50,9 +43,6 @@ class DQNRosClient(RosKittenClient):
         fl.client.start_client(server_address=common.SERVER_ADDR,
                                client=RosClientWrapper(self), insecure=True)
 
-
-    def _build_algorithm(self) -> None:
-        self._algorithm, self._policy = self._policy_factory(self._knowl)
 
     @property
     def policy(self) -> kitten.policy.Policy:
@@ -76,14 +66,13 @@ class RosClientWrapper(fl.client.Client):
 
 def main(args=None):
     rclpy.init(args=args)
+    algorithm, policy = common.build_dqn_algorithm(cfg=common.config, knowledge=common.default_knowledge_fn(), action_space=common.action_space, seed=common.SEED, device="cpu")
     node = DQNRosClient(node_name="dqn_actor",
                         replay_buffer_service=common.MEMORY_SERVICE,
                         policy_update_topic=common.POLICY_UPDATE_TOPIC,
-                        config=common.config,
-                        knowledge=common.default_knowledge_fn(),
-                        action_space=common.action_space,
-                        algorithm_factory_fn=common.build_dqn_algorithm,
-                        seed=common.SEED)
+                        algorithm=algorithm,
+                        policy=policy,
+                        knowledge=common.default_knowledge_fn())
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
