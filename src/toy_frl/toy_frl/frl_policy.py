@@ -20,7 +20,7 @@ StateType = TypeVar("StateType", np.ndarray, torch.Tensor)  # StateType
 
 class RlActor(Generic[ActionType, StateType], Node, ABC):
     def __init__(self, node_name: str, policy_service: str, policy_update_topic: str):
-        Node.__init__(self, f"Reinforcement Learning Actor {node_name}")
+        Node.__init__(self, f"Reinforcement_Learning_Actor_{node_name}")
         self._cb_group = MutuallyExclusiveCallbackGroup()
         self.service = self.create_service(
             srv.PolicyService,

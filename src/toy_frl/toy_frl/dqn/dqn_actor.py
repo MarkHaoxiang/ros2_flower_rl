@@ -17,7 +17,7 @@ import rclpy
 from toy_frl.frl_policy import RlActor
 from toy_frl.frl_client import RosKittenClient
 
-import common
+import toy_frl.dqn.common as common
 
 class DqnActor(RlActor[np.ndarray, np.ndarray]):
     def __init__(

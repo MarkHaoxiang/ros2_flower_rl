@@ -199,8 +199,8 @@ class ToyClient(Node):
         # Register context for this run
         self.node_state.register_context(run_id=message.metadata.run_id)
         # Retrieve context for this run
-        context = self.node_self.get_logger().info.retrieve_context(run_id=message.metadata.run_id)
-        cself.get_logger().info: ClientApp = load_client_app_fn()
+        context = self.node_state.retrieve_context(run_id=message.metadata.run_id)
+        client_app: ClientApp = load_client_app_fn()
         out_message = client_app(message=message, context=context)
         self.get_logger().info("Out message is ready")
         # Update node state

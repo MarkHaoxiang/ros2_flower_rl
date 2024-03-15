@@ -18,7 +18,7 @@ action_type = np.ndarray
 state_type = np.ndarray
 
 
-class RosKittenClient(FlorlClient, Node):
+class RosKittenClient(Node, FlorlClient):
     def __init__(
         self,
         node_name: str,
@@ -29,8 +29,8 @@ class RosKittenClient(FlorlClient, Node):
         device: str = "cpu",
     ):
         # Note currently we cannot support client side evaluation
+        Node.__init__(self, node_name)
         FlorlClient.__init__(self, knowledge, enable_evaluation=False)
-        Node.__init__(self, node_name=node_name)
         self._algorithm = algorithm
         self._knowl = knowledge
         self._device = device
