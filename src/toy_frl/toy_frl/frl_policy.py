@@ -37,6 +37,7 @@ class RlActor(Generic[ActionType, StateType], Node, ABC):
             callback_group=self._cb_group,
         )
         self.get_logger().info("Policy update subscription initiated")
+        self._cnt = 0
 
     @property
     def _action_type(self) -> Type:
@@ -66,9 +67,10 @@ class RlActor(Generic[ActionType, StateType], Node, ABC):
         response: srv.PolicyService.Response,
     ) -> srv.PolicyService.Response:
         obs = FloatTensor.unpack(request.s_0).torch()
-        self.get_logger().info(f"received observation {obs}")
         action: ActionType = self.policy(obs)
         response.a = FloatTensor.build(action).pack()
+        self._cnt += 1
+        self.get_logger().info(f"Published {self._cnt} transitions")
         return response
 
     @abstractmethod

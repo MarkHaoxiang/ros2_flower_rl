@@ -35,6 +35,7 @@ class DQNRosClient(RosKittenClient):
         algorithm: kitten.rl.Algorithm,
         policy: kitten.policy.Policy,
         knowledge: Knowledge,
+        config,
         # action_space: Space[Any],
         device: str = "cpu",
     ):
@@ -45,6 +46,7 @@ class DQNRosClient(RosKittenClient):
             policy_update_topic,
             algorithm,
             knowledge,
+            config,
             device,
         )
         self._cb_group = ReentrantCallbackGroup()
@@ -148,8 +150,9 @@ class DQNRosClient(RosKittenClient):
             self.get_logger().info("Training has been suspended or terminated")
 
     def timed_message_callback(self, receive, send, load_client_app_fn):
-
+        self.get_logger().info("Timed message callback entered")
         message = receive()
+        self.get_logger().info("messaged received")
         if message is None:
             return
         self.get_logger().info(
@@ -186,6 +189,9 @@ class DQNRosClient(RosKittenClient):
             f"Sent: {out_message.metadata.message_type} reply to message {message.metadata.message_id}"
         )
 
+    def get_parameters(self, ins):
+        return self.get_flwr_parameter(ins)
+
     @property
     def policy(self) -> kitten.policy.Policy:
         return self._policy
@@ -200,7 +206,7 @@ class RosClientWrapper(fl.client.Client):
         self._client = client
 
     def get_parameters(self, ins: GetParametersIns) -> GetParametersRes:
-        return self._client.get_parameters(ins)
+        return self._client.get_flwr_parameter(ins)
 
     def fit(self, ins: FitIns) -> FitRes:
         return self._client.fit(ins)
@@ -209,13 +215,15 @@ class RosClientWrapper(fl.client.Client):
 def main(args=None):
     rclpy.init(args=args)
     knowledge = common.default_knowledge_fn()
-    algorithm, policy = common.build_dqn_algorithm(cfg=common.config, knowledge=knowledge, action_space=common.action_space, seed=common.SEED, device="cpu")
+    config = common.config["rl"]
+    algorithm, policy = common.build_dqn_algorithm(cfg=config, knowledge=knowledge, action_space=common.action_space, seed=common.SEED, device="cpu")
     node = DQNRosClient(node_name="dqn_actor",
                         replay_buffer_service=common.MEMORY_SERVICE,
                         policy_update_topic=common.POLICY_UPDATE_TOPIC,
                         algorithm=algorithm,
                         policy=policy,
-                        knowledge=knowledge)
+                        knowledge=knowledge,
+                        config=config)
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()

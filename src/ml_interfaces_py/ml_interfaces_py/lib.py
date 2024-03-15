@@ -160,7 +160,7 @@ class Transition(msg.Transition):
             s_0=FloatTensor.unpack(msg.s_0),
             a=FloatTensor.unpack(msg.a),
             r=msg.r,
-            s_1=FloatTensor.unpack(msg.a),
+            s_1=FloatTensor.unpack(msg.s_1),
             d=msg.d,
         )
 
