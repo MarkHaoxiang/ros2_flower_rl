@@ -11,7 +11,7 @@ from florl.client.kitten.dqn import DQNKnowledge
 from flwr.common.typing import Config
 from gymnasium.spaces import Space
 import rclpy
-from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 
 from toy_frl.frl_client import RosKittenClient
 
@@ -49,7 +49,7 @@ class DQNRosClient(RosKittenClient):
             config,
             device,
         )
-        self._cb_group = ReentrantCallbackGroup()
+        self._cb_group = MutuallyExclusiveCallbackGroup()
         self._init_client()
 
     def _init_client(self):
@@ -94,7 +94,7 @@ class DQNRosClient(RosKittenClient):
         self._training_ended = False
         self._train_timer = None
         self.client_manager_timer = self.create_timer(
-            timer_period_sec=1.0,
+            timer_period_sec=3.0,
             callback=lambda: self.timed_connect_callback(
                 address=address,
                 insecure=insecure,
@@ -156,15 +156,16 @@ class DQNRosClient(RosKittenClient):
         if message is None:
             return
         self.get_logger().info(
-            f"[RUN { message.metadata.run_id }, ROUND { message.metadata.group_id }]"
+            f"[RUN {message.metadata.run_id}, ROUND { message.metadata.group_id }]"
         )
         self.get_logger().info(
-            f"Received: { message.metadata.message_type } message { message.metadata.message_id }"
+            f"Received: {message.metadata.message_type} message { message.metadata.message_id }"
         )
         # Handle control message
         out_message, _ = handle_control_message(message)
         if out_message:
             send(out_message)
+            self.get_logger().info("Terminated by control message")
             self._training_ended = True
             return
         # Register context for this run

@@ -177,7 +177,7 @@ class RosKnowledgeShard(msg.KnowledgeShard):
     @staticmethod
     def pack(shard: florl.common.knowledge.KnowledgeShard) -> msg.KnowledgeShard:
         assert shard.parameters is not None
-        parameters = [FloatTensor.build(arr) for arr in parameters_to_ndarrays(shard.parameters)]
+        parameters = [FloatTensor.build(arr).pack() for arr in parameters_to_ndarrays(shard.parameters)]
         return msg.KnowledgeShard(name=shard.name, parameters=parameters)
 
     @staticmethod
@@ -194,5 +194,3 @@ class RosKnowledge(msg.Knowledge):
     def pack(knowledge: florl.common.knowledge.Knowledge) -> msg.Knowledge:
         shards = [RosKnowledgeShard.pack(shard) for name, shard in knowledge._shards_registry.items()]
         return msg.Knowledge(knowledge=shards)
-    
-

@@ -61,6 +61,7 @@ class RosKittenClient(Node, FlorlClient):
         self.get_logger().info(f"Training")
         for i in range(int(config["frames"])):
             # Collected Transitions
+            self.get_logger().info(f"Training frame {i}")
             num_samples = self._cfg["train"]["minibatch_size"]  # type: ignore
             # TODO: Return Flower failure if not enough samples
             batch, aux = self.sample_request(num_samples)
@@ -69,6 +70,7 @@ class RosKittenClient(Node, FlorlClient):
             self._step += 1
         # Sync Policy
         self.publish_knowledge(self._knowl)
+        self.get_logger().info(f"Published updated knowledge")
 
         # Logging
         metrics["loss"] = sum(critic_loss) / len(critic_loss)

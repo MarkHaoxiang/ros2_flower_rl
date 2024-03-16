@@ -54,9 +54,10 @@ def _on_fit_config_fn(server_round: int):
 def _on_evaluate_config_fn(server_round: int):
     return evaluate_config | {"server_round": server_round}
 
-strategy = RlFedAvg(
+single_client_strategy = RlFedAvg(
     knowledge=deepcopy(default_knowledge),
     min_fit_clients=1,
+    fraction_evaluate=0.0,
     min_available_clients=1,
     on_fit_config_fn = _on_fit_config_fn,
     on_evaluate_config_fn= _on_evaluate_config_fn,
@@ -68,7 +69,7 @@ strategy = RlFedAvg(
 
 server_config = fl.server.ServerConfig(num_rounds=10, )
 def main():
-    start_server(server_address="[::]:8080", strategy=strategy, config=server_config)
+    start_server(server_address="[::]:8080", strategy=single_client_strategy, config=server_config)
 
 if __name__ == "__main__":
     main()
