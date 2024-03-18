@@ -12,7 +12,7 @@ from kitten.rl.dqn import DQN
 
 POLICY_SERVICE: str = "policy"
 POLICY_UPDATE_TOPIC: str = "knowledge"
-MEMORY_SERVICE: str = "memory"
+MEMORY_SERVICE: str = "replay_buffer_sample"
 
 DQN_SHARDS = ["critic", "critic_target"]
 
@@ -27,7 +27,7 @@ SERVER_ADDR = "[::]:8080"
 config = {
     "rl": {
         "env": {
-            "name": "Pendulum-v1"
+            "name": "CartPole-v1"
         },
         "algorithm": {
             "gamma": 0.99,

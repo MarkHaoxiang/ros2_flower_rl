@@ -23,8 +23,8 @@ setup(
             "transition_publisher_placeholder = toy_frl.placeholder.transition_publisher_placeholder:main",
             "policy_placeholder = toy_frl.placeholder.policy_placeholder:main",
             "gym_controller = toy_frl.gym_controller:main",  
-            "dqn_actor = toy_frl.gym_sim.dqn.dqn_actor:main",
-            "dqn_client = toy_frl.gym_sim.dqn.dqn_client:main",
+            "dqn_actor = toy_frl.dqn.dqn_actor:main",
+            "dqn_client = toy_frl.dqn.dqn_client:main",
         ],
     },
 )

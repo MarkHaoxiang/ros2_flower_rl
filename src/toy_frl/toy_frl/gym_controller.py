@@ -32,7 +32,7 @@ class GymController(Node):
 
         # Transition publisher
         self.publisher = self.create_publisher(
-            msg_type=msg.Transition, topic=POLICY_UPDATE_TOPIC, qos_profile=10
+            msg_type=msg.Transition, topic="observations", qos_profile=10
         )
         self.get_logger().info("Transition/Memory buffer publisher started")
 
@@ -88,7 +88,7 @@ class GymController(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = GymController("CartPole")
+    node = GymController("CartPole-v1")
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()

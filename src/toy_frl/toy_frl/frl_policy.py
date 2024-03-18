@@ -20,7 +20,7 @@ StateType = TypeVar("StateType", np.ndarray, torch.Tensor)  # StateType
 
 class RlActor(Generic[ActionType, StateType], Node, ABC):
     def __init__(self, node_name: str, policy_service: str, policy_update_topic: str):
-        Node.__init__(self, f"Reinforcement Learning Actor {node_name}")
+        Node.__init__(self, f"Reinforcement_Learning_Actor_{node_name}")
         self._cb_group = MutuallyExclusiveCallbackGroup()
         self.service = self.create_service(
             srv.PolicyService,
@@ -37,6 +37,7 @@ class RlActor(Generic[ActionType, StateType], Node, ABC):
             callback_group=self._cb_group,
         )
         self.get_logger().info("Policy update subscription initiated")
+        self._cnt = 0
 
     @property
     def _action_type(self) -> Type:
@@ -68,6 +69,8 @@ class RlActor(Generic[ActionType, StateType], Node, ABC):
         obs = FloatTensor.unpack(request.s_0).torch()
         action: ActionType = self.policy(obs)
         response.a = FloatTensor.build(action).pack()
+        self._cnt += 1
+        self.get_logger().info(f"Published {self._cnt} transitions")
         return response
 
     @abstractmethod

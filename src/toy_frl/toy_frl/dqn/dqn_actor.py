@@ -17,7 +17,7 @@ import rclpy
 from toy_frl.frl_policy import RlActor
 from toy_frl.frl_client import RosKittenClient
 
-import common
+import toy_frl.dqn.common as common
 
 class DqnActor(RlActor[np.ndarray, np.ndarray]):
     def __init__(
@@ -53,14 +53,18 @@ class DqnActor(RlActor[np.ndarray, np.ndarray]):
         return self._knowl
 
     def update_policy(self, msg: msg.Knowledge) -> None:
+        self.get_logger().info("Policy Update Received")
         shards = RosKnowledge.unpack_to_shards(msg)
         self._knowl.update_knowledge(shards, shard_filter=common.DQN_SHARDS)
+        self.get_logger().info("Knowledge updated")
 
         # FIXME: I'm not sure if kitten.rl.Algorithm.policy_fn is stateful i.e.
         # if I've already update the critic embeded in an algorithm, do I need
         # to explicitly regenerate the policy and algorithm?
         # If not, remove the line below
+        self.get_logger().info("Updating Policy")
         self._algorithm, self._policy = self._policy_factory(self.knowledge)
+        self.get_logger().info("Policy Updated")
 
 def main(args=None):
     rclpy.init(args=args)

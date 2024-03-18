@@ -18,7 +18,7 @@ action_type = np.ndarray
 state_type = np.ndarray
 
 
-class RosKittenClient(FlorlClient, Node):
+class RosKittenClient(Node, FlorlClient):
     def __init__(
         self,
         node_name: str,
@@ -26,15 +26,17 @@ class RosKittenClient(FlorlClient, Node):
         policy_update_topic: str,
         algorithm: kitten.rl.Algorithm,
         knowledge: Knowledge,
+        config,
         device: str = "cpu",
     ):
         # Note currently we cannot support client side evaluation
+        Node.__init__(self, node_name)
         FlorlClient.__init__(self, knowledge, enable_evaluation=False)
-        Node.__init__(self, node_name=node_name)
         self._algorithm = algorithm
         self._knowl = knowledge
         self._device = device
         self._step = 0
+        self._cfg = config
 
         # Memory Service
         self.memory_client = self.create_client(
@@ -56,15 +58,19 @@ class RosKittenClient(FlorlClient, Node):
         # Synchronise critic net
         critic_loss = []
         # Training
-        for _ in range(int(config["frames"])):
+        self.get_logger().info(f"Training")
+        for i in range(int(config["frames"])):
             # Collected Transitions
-            num_samples = int(self._cfg["train"]["minibatch_size"])  # type: ignore
+            self.get_logger().info(f"Training frame {i}")
+            num_samples = self._cfg["train"]["minibatch_size"]  # type: ignore
             # TODO: Return Flower failure if not enough samples
-            batch, aux = rclpy.spin_until_future_complete(self.sample_request(num_samples))
+            batch, aux = self.sample_request(num_samples)
             # Algorithm Update
-            critic_loss.append(self._algorithm.update(batch, aux, self.step))
+            critic_loss.append(self._algorithm.update(batch, aux, self._step))
+            self._step += 1
         # Sync Policy
         self.publish_knowledge(self._knowl)
+        self.get_logger().info(f"Published updated knowledge")
 
         # Logging
         metrics["loss"] = sum(critic_loss) / len(critic_loss)
@@ -76,7 +82,7 @@ class RosKittenClient(FlorlClient, Node):
     def get_ros_parameter(self, names: list[str]):
         return Node.get_parameters(self, names)
 
-    async def sample_request(
+    def sample_request(
         self, n: int
     ) -> tuple[kitten.experience.Transition, kitten.experience.AuxiliaryMemoryData]:
         """Samples a batch from memory
@@ -89,21 +95,23 @@ class RosKittenClient(FlorlClient, Node):
         """
         request = srv.SampleTransition.Request(n=n)
         future = self.memory_client.call_async(request)
-        try:
-            response: srv.SampleTransition.Response = await future
-        except Exception as e:
-            self.get_logger().warn(str(e))
+        rclpy.spin_until_future_complete(self, future)
+        response = future.result()
+        # try:
+        #     response: srv.SampleTransition.Response = await future
+        # except Exception as e:
+        #     self.get_logger().warn(str(e))
 
         batch = [Transition.unpack(x) for x in response.batch]
         batch = [x.numpy() for x in batch]
         batch = kitten.experience.util.build_transition_from_list(batch)
-        # Placeholder
+        res_batch = kitten.experience.Transition(s_0=batch.s_0, a=batch.a.int(), r=batch.r, s_1=batch.s_1, d=batch.d)
         aux = kitten.experience.AuxiliaryMemoryData(
-            weights=torch.ones(len(batch.s_0), batch.s_0.get_device()),
+            weights=torch.ones(n, device="cpu"),
             random=None,
             indices=None,
         )
-        return batch, aux
+        return res_batch, aux
 
     def publish_knowledge(self, knowledge: Knowledge) -> None:
         msg = RosKnowledge.pack(knowledge)
