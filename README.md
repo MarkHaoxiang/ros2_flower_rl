@@ -1,7 +1,7 @@
 # ros2_flower_rl
 Project for the Federated Learning course at Cambridge, together with https://github.com/MarkHaoxiang/florl
 
-Checkout the timer_callback branch for working toy_frl (DQN CartPole). This branch is for toy_fl (MNIST classifier). Merging the two is a TODO.
+As only I have requested a project extension, please see branch zc344-submission for an older snapshot of the codebase on the deadline for Xavier's submission. The newer commits to main, up to the deadline of 22/03/2024, contains only my work.
 
 `source setup.sh`
 
