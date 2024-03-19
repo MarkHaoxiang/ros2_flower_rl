@@ -2,7 +2,7 @@ from __future__ import annotations
 from abc import abstractmethod, ABC
 
 
-import rclpy
+from rclpy.node import Node
 import flwr as fl
 from flwr.common import (
     EvaluateIns,
@@ -15,12 +15,13 @@ from flwr.common import (
     GetPropertiesRes
 )
 
-class RosFlowerNode(rclpy.Node, fl.client.Client, ABC):
+class RosFlowerNode(Node, fl.client.Client, ABC):
     def __init__(self,
+                 *args,
                  server_addr: str = "[::]8080",
-                 *args, **kwargs
+                 **kwargs
         ):
-        rclpy.Node.__init__(self, *args, **kwargs)
+        Node.__init__(self, *args, **kwargs)
         fl.client.Client.__init__(self)
         self._server_addr = server_addr
 

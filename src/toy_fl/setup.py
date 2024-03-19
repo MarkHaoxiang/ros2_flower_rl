@@ -15,7 +15,7 @@ setup(
     maintainer="markhaoxiang",
     maintainer_email="mark.haoxiang@gmail.com",
     description="Runs a toy federated learning dataset as a simulated robotic training task",
-    license="TODO: License declaration",
+    license="Apache 2.0",
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
