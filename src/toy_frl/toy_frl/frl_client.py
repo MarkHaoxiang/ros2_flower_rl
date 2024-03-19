@@ -28,10 +28,11 @@ class FRLClient(TimerCallbackClient, FlorlClient):
         algorithm: kitten.rl.Algorithm,
         knowledge: Knowledge,
         config,
+        server_addr: str = "[::]:8080",
         device: str = "cpu",
     ):
         # Note currently we cannot support client side evaluation
-        Node.__init__(self, node_name)
+        TimerCallbackClient.__init__(self, node_name, server_addr=server_addr)
         FlorlClient.__init__(self, knowledge, enable_evaluation=False)
         self._algorithm = algorithm
         self._knowl = knowledge
@@ -59,13 +60,13 @@ class FRLClient(TimerCallbackClient, FlorlClient):
         # Synchronise critic net
         critic_loss = []
         # Training
-        self.get_logger().info(f"Training")
+        self.get_logger().info(f"Begin training round")
         for i in range(int(config["frames"])):
             # Collected Transitions
-            self.get_logger().info(f"Training frame {i}")
             num_samples = self._cfg["train"]["minibatch_size"]  # type: ignore
-            # TODO: Return Flower failure if not enough samples
+            # TODO: Deal with lower number of samples than requested
             batch, aux = self.sample_request(num_samples)
+
             # Algorithm Update
             critic_loss.append(self._algorithm.update(batch, aux, self._step))
             self._step += 1
@@ -97,23 +98,23 @@ class FRLClient(TimerCallbackClient, FlorlClient):
         batch = kitten.experience.util.build_transition_from_list(batch)
         res_batch = kitten.experience.Transition(s_0=batch.s_0, a=batch.a.int(), r=batch.r, s_1=batch.s_1, d=batch.d)
         aux = kitten.experience.AuxiliaryMemoryData(
-            weights=torch.ones(n, device="cpu"),
+            weights=torch.ones(len(res_batch.s_0), device=self._device),
             random=None,
             indices=None,
         )
         return res_batch, aux
     
     def fit(self, ins: FitIns) -> FitRes:
-        return FlorlClient.fit(self, ins)
+        return FlorlClient.fit(self._proxy_client, ins)
     
     def evaluate(self, ins: EvaluateIns) -> EvaluateRes:
-        return FlorlClient.evaluate(self, ins)
+        return FlorlClient.evaluate(self._proxy_client, ins)
     
     def flwr_get_parameters(self, ins: GetParametersIns) -> GetParametersRes:
-        return FlorlClient.get_parameters(ins)
+        return FlorlClient.get_parameters(self, ins)
     
     def flwr_get_properties(self, ins: GetPropertiesIns) -> GetPropertiesRes:
-        return FlorlClient.get_properties(ins)
+        return FlorlClient.get_properties(self, ins)
 
     def publish_knowledge(self, knowledge: Knowledge) -> None:
         msg = RosKnowledge.pack(knowledge)

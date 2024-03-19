@@ -8,9 +8,8 @@ import kitten
 import ml_interfaces.msg as msg
 import ml_interfaces.srv as srv
 import numpy as np
-import rclpy
 import torch
-from ml_interfaces_py import FloatTensor, Transition
+from ml_interfaces_py import FloatTensor
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.node import Node
 
@@ -70,7 +69,7 @@ class RlActor(Generic[ActionType, StateType], Node, ABC):
         action: ActionType = self.policy(obs)
         response.a = FloatTensor.build(action).pack()
         self._cnt += 1
-        self.get_logger().info(f"Published {self._cnt} transitions")
+        # self.get_logger().info(f"Published {self._cnt} transitions")
         return response
 
     @abstractmethod

@@ -35,6 +35,9 @@ class RosFlowerClientProxy(fl.client.Client):
     def evaluate(self, ins: EvaluateIns) -> EvaluateRes:
         return self._client.evaluate(ins)
 
+    def __getattr__(self, name: str):
+        return self._client.__getattribute__(name)
+
 class RosFlowerNode(Node, fl.client.Client, ABC):
     def __init__(self,
                  *args,

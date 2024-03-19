@@ -23,7 +23,7 @@ class DQNRosClient(FRLClient):
         policy: kitten.policy.Policy,
         knowledge: Knowledge,
         config,
-        # action_space: Space[Any],
+        server_addr: str = "[::]:8080",
         device: str = "cpu",
     ):
         self._policy = policy
@@ -34,6 +34,7 @@ class DQNRosClient(FRLClient):
             algorithm,
             knowledge,
             config,
+            server_addr,
             device,
         )
         self._cb_group = MutuallyExclusiveCallbackGroup()

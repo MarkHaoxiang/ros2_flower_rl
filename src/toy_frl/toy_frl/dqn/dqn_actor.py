@@ -1,21 +1,18 @@
 # ruff: noqa: F401
 
 from typing import Callable
-from copy import deepcopy
 
 from florl.common import Knowledge
-import flwr as fl
 import kitten
 import numpy as np
 from florl.client.kitten.dqn import DQNKnowledge
 from flwr.common.typing import Config
 from gymnasium.spaces import Space
-from ml_interfaces import msg, srv
-from ml_interfaces_py import FloatTensor, RosKnowledge
+from ml_interfaces import msg
+from ml_interfaces_py import RosKnowledge
 import rclpy
 
 from toy_frl.frl_policy import RlActor
-from toy_frl.frl_client import RosKittenClient
 
 import toy_frl.dqn.common as common
 

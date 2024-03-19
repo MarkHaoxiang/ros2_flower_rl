@@ -99,7 +99,7 @@ private:
     void sample(const std::shared_ptr<typename S::Request> request,
                  std::shared_ptr<typename S::Response> response)
     {
-        RCLCPP_INFO(this->get_logger(), "Sampling Service Requested");
+        // RCLCPP_INFO(this->get_logger(), "Sampling Service Requested");
         size_t n = static_cast<size_t>(request->n);
         // RCLCPP_INFO(this->get_logger(), "%d", n);
         if (n > this->memory.size())
