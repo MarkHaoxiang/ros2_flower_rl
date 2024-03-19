@@ -4,19 +4,21 @@ from collections import OrderedDict
 
 import flwr as fl
 import rclpy
+from rclpy import executors
 import torch
 from flwr.common.typing import (Code, FitIns, FitRes, GetParametersIns,
                                 GetParametersRes, Parameters, Status)
 import ml_interfaces.msg as msg
 from ml_interfaces_py import FeatureLabelPair
-from ros2_flower_bridge import DualThreadClient
+from ros2_flower_bridge import TimerCallbackClient
 
 from .nn import MnistClassifier
 
 
 BATCH_SIZE = 16
+MAX_STORAGE_SIZE = 4096
 
-class ToyClient(DualThreadClient):
+class ToyClient(TimerCallbackClient):
     """ROS node responsible for subscribing to sensor data, training and communicating with the flower server"""
     def __init__(self, server_addr: str = "[::]:8080"):
         """ROS node responsible for subscribing to sensor data, training and communicating with the flower server
@@ -31,7 +33,7 @@ class ToyClient(DualThreadClient):
             msg_type=msg.FeatureLabelPair,
             topic="data_stream",
             callback=self.listener_callback,
-            qos_profile=10
+            qos_profile=10,
         )
         self._server_addr = server_addr
 
@@ -94,6 +96,9 @@ class ToyClient(DualThreadClient):
                 self._y = torch.cat((self._y, labels))
                 self._feature_buffer = []
                 self._label_buffer = []
+        if len(self._X) > MAX_STORAGE_SIZE:
+            self._X = self._X[-MAX_STORAGE_SIZE:]
+            self._X = self._Y[-MAX_STORAGE_SIZE:]
 
         # Update parameters
         self.flwr_set_parameters(ins.parameters)
@@ -103,7 +108,7 @@ class ToyClient(DualThreadClient):
         n_batches = math.ceil(n / BATCH_SIZE)
         average_loss = 0
         for i in range(n_batches):
-            self.get_logger().info(f"Fitting batch {i} with {len(self._X)}, {len(self._feature_buffer)} in buffer.")
+            self.get_logger().info(f"Fitting batch {i} out of {n_batches} with {len(self._X)}, {len(self._feature_buffer)} in buffer.")
             X = self._X[i * BATCH_SIZE : max(n, i + BATCH_SIZE)]
             y = self._y[i * BATCH_SIZE : max(n, i + BATCH_SIZE)].to(torch.long)
             py = self._net(X)
@@ -125,10 +130,14 @@ class ToyClient(DualThreadClient):
 def main(args=None):
     rclpy.init(args=args)
     node = ToyClient()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
-
+    executor = executors.MultiThreadedExecutor()
+    executor.add_node(node)
+    try:
+        executor.spin()
+    finally:
+        node.destroy_node()
+        executor.shutdown()
+        rclpy.shutdown()
 
 if __name__ == "__main__":
     main()

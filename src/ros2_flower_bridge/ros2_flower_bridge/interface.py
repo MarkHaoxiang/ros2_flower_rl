@@ -15,6 +15,26 @@ from flwr.common import (
     GetPropertiesRes
 )
 
+class RosFlowerClientProxy(fl.client.Client):
+    """ Compatibility layer between ROS and Flower
+    """
+    def __init__(self,
+                 client: RosFlowerNode) -> None:
+        super().__init__()
+        self._client = client
+
+    def get_properties(self, ins: GetPropertiesIns) -> GetPropertiesRes:
+        return self._client.flwr_get_properties(ins)
+
+    def get_parameters(self, ins: GetParametersIns) -> GetParametersRes:
+        return self._client.flwr_get_parameters(ins)
+
+    def fit(self, ins: FitIns) -> FitRes:
+        return self._client.fit(ins)
+
+    def evaluate(self, ins: EvaluateIns) -> EvaluateRes:
+        return self._client.evaluate(ins)
+
 class RosFlowerNode(Node, fl.client.Client, ABC):
     def __init__(self,
                  *args,
