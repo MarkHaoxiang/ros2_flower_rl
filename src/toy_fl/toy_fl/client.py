@@ -98,7 +98,7 @@ class ToyClient(TimerCallbackClient):
                 self._label_buffer = []
         if len(self._X) > MAX_STORAGE_SIZE:
             self._X = self._X[-MAX_STORAGE_SIZE:]
-            self._X = self._Y[-MAX_STORAGE_SIZE:]
+            self._y = self._y[-MAX_STORAGE_SIZE:]
 
         # Update parameters
         self.flwr_set_parameters(ins.parameters)
