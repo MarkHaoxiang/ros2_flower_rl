@@ -1,9 +1,11 @@
 # ruff: noqa: F401
 from __future__ import annotations
 
+from flwr.common import EvaluateIns, EvaluateRes, FitIns, FitRes, GetPropertiesIns, GetPropertiesRes
 import kitten
 import numpy as np
 import rclpy
+from rclpy.node import Node
 import torch
 from florl.client.client import FlorlClient
 from florl.common import Knowledge
@@ -11,14 +13,13 @@ from flwr.common.typing import Config, GetParametersIns, GetParametersRes, Scala
 from ml_interfaces import msg as msg
 from ml_interfaces import srv as srv
 from ml_interfaces_py import RosKnowledge, Transition
-from rclpy.callback_groups import ReentrantCallbackGroup
-from rclpy.node import Node
+from ros2_flower_bridge import TimerCallbackClient
 
 action_type = np.ndarray
 state_type = np.ndarray
 
 
-class RosKittenClient(Node, FlorlClient):
+class FRLClient(TimerCallbackClient, FlorlClient):
     def __init__(
         self,
         node_name: str,
@@ -76,12 +77,6 @@ class RosKittenClient(Node, FlorlClient):
         metrics["loss"] = sum(critic_loss) / len(critic_loss)
         return 1, metrics
 
-    def get_flwr_parameter(self, ins: GetParametersIns) -> GetParametersRes:
-        return FlorlClient.get_parameters(self, ins)
-
-    def get_ros_parameter(self, names: list[str]):
-        return Node.get_parameters(self, names)
-
     def sample_request(
         self, n: int
     ) -> tuple[kitten.experience.Transition, kitten.experience.AuxiliaryMemoryData]:
@@ -97,11 +92,6 @@ class RosKittenClient(Node, FlorlClient):
         future = self.memory_client.call_async(request)
         rclpy.spin_until_future_complete(self, future)
         response = future.result()
-        # try:
-        #     response: srv.SampleTransition.Response = await future
-        # except Exception as e:
-        #     self.get_logger().warn(str(e))
-
         batch = [Transition.unpack(x) for x in response.batch]
         batch = [x.numpy() for x in batch]
         batch = kitten.experience.util.build_transition_from_list(batch)
@@ -112,6 +102,18 @@ class RosKittenClient(Node, FlorlClient):
             indices=None,
         )
         return res_batch, aux
+    
+    def fit(self, ins: FitIns) -> FitRes:
+        return FlorlClient.fit(self, ins)
+    
+    def evaluate(self, ins: EvaluateIns) -> EvaluateRes:
+        return FlorlClient.evaluate(self, ins)
+    
+    def flwr_get_parameters(self, ins: GetParametersIns) -> GetParametersRes:
+        return FlorlClient.get_parameters(ins)
+    
+    def flwr_get_properties(self, ins: GetPropertiesIns) -> GetPropertiesRes:
+        return FlorlClient.get_properties(ins)
 
     def publish_knowledge(self, knowledge: Knowledge) -> None:
         msg = RosKnowledge.pack(knowledge)

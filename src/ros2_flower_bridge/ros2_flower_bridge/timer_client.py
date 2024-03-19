@@ -17,7 +17,10 @@ class TimerCallbackClient(RosFlowerNode):
 
     """ Uses timer callbacks to manage communication to the server
 
-    More efficient compared to thread_client, as avoids spinning on while loop.
+    If possible, use this instead of DualThreadClient
+    - Avoids spinning on a loop to conserve resources
+
+    #TODO: Support async
     """
     def start_client(
         self,
