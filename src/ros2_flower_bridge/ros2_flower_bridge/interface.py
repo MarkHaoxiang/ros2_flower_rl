@@ -18,7 +18,7 @@ from flwr.common import (
 class RosFlowerNode(Node, fl.client.Client, ABC):
     def __init__(self,
                  *args,
-                 server_addr: str = "[::]8080",
+                 server_addr: str = "[::]:8080",
                  **kwargs
         ):
         Node.__init__(self, *args, **kwargs)

@@ -18,7 +18,7 @@ BATCH_SIZE = 16
 
 class ToyClient(DualThreadClient):
     """ROS node responsible for subscribing to sensor data, training and communicating with the flower server"""
-    def __init__(self, server_addr: str = "[::]8080"):
+    def __init__(self, server_addr: str = "[::]:8080"):
         """ROS node responsible for subscribing to sensor data, training and communicating with the flower server
 
         Args:
@@ -103,7 +103,7 @@ class ToyClient(DualThreadClient):
         n_batches = math.ceil(n / BATCH_SIZE)
         average_loss = 0
         for i in range(n_batches):
-            self.get_logger().info(f"Fitting batch {i} with {len(self._X)}")
+            self.get_logger().info(f"Fitting batch {i} with {len(self._X)}, {len(self._feature_buffer)} in buffer.")
             X = self._X[i * BATCH_SIZE : max(n, i + BATCH_SIZE)]
             y = self._y[i * BATCH_SIZE : max(n, i + BATCH_SIZE)].to(torch.long)
             py = self._net(X)
