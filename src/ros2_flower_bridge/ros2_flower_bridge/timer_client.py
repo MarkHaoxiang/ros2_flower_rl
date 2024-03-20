@@ -77,10 +77,9 @@ class TimerCallbackClient(RosFlowerNode):
         load_client_app_fn: Callable[[], ClientApp],
     ):
         if _timer_running(self._train_timer) and not self._training_ended:        
-            self.get_logger().info("Client Manager callback not needed")
             return
 
-        self.get_logger().info("Client Manager callback called")
+        # self.get_logger().info("Client Manager callback called")
         if not _timer_running(self._train_timer) and not self._training_ended:
             self.conn = self.connection(address, insecure, retry_invoker, grpc_max_message_length, root_certificates)
             receive, send, create_node, delete_node = self.conn.__enter__()
@@ -114,9 +113,9 @@ class TimerCallbackClient(RosFlowerNode):
         self.get_logger().info(
             f"[RUN { message.metadata.run_id }, ROUND { message.metadata.group_id }]"
         )
-        self.get_logger().info(
-            f"Received: { message.metadata.message_type } message { message.metadata.message_id }"
-        )
+        # self.get_logger().info(
+        #     f"Received: { message.metadata.message_type } message { message.metadata.message_id }"
+        # )
         # Handle control message
         out_message, _ = handle_control_message(message)
         if out_message:
@@ -138,9 +137,9 @@ class TimerCallbackClient(RosFlowerNode):
 
         # Send
         send(out_message)
-        self.get_logger().info(
-            f"Sent: {out_message.metadata.message_type} reply to message {message.metadata.message_id}"
-        )
-
+        #self.get_logger().info(
+        #    f"Sent: {out_message.metadata.message_type} reply to message {message.metadata.message_id}"
+        #)
+    
 def _timer_running(timer):
     return timer is not None and not timer.is_canceled()

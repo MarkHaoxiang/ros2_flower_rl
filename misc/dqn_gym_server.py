@@ -33,7 +33,7 @@ single_client_strategy = FedAvg(
     inplace=False
 )
 
-server_config = fl.server.ServerConfig(num_rounds=100, )
+server_config = fl.server.ServerConfig(num_rounds=20, )
 def main():
     start_server(server_address="[::]:8080", strategy=single_client_strategy, config=server_config)
 

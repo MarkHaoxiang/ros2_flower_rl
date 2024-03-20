@@ -16,10 +16,8 @@ MEMORY_SERVICE: str = "replay_buffer_sample"
 
 DQN_SHARDS = ["critic", "critic_target"]
 
-NUM_CLIENTS = 5
 TOTAL_ROUNDS = 100
 FRAMES_PER_ROUND = 50
-EXPERIMENT_REPEATS = 20
 SEED = 0
 
 SERVER_ADDR = "[::]:8080"
