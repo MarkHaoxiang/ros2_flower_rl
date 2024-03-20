@@ -1,8 +1,10 @@
 # ruff: noqa: F401
 from florl.common import Knowledge
+from flwr.common import FitIns, FitRes
 import kitten
 from flwr.common.typing import Config
 import rclpy
+from rclpy import executors
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 
 from toy_frl.dqn import common
@@ -32,9 +34,8 @@ class DQNRosClient(FRLClient):
             server_addr,
             device,
         )
-        self._cb_group = MutuallyExclusiveCallbackGroup()
         self.start_client()
-
+    
     @property
     def policy(self) -> kitten.policy.Policy:
         return self._policy
@@ -55,9 +56,14 @@ def main(args=None):
                         policy=policy,
                         knowledge=knowledge,
                         config=config)
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    executor = executors.MultiThreadedExecutor()
+    executor.add_node(node)
+    try:
+        executor.spin()
+    finally:
+        node.destroy_node()
+        executor.shutdown()
+        rclpy.shutdown()
 
 if __name__ == "__main__":
     main()

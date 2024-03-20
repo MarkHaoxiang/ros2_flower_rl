@@ -5,6 +5,7 @@ from flwr.common import EvaluateIns, EvaluateRes, FitIns, FitRes, GetPropertiesI
 import kitten
 import numpy as np
 import rclpy
+from rclpy.callback_groups import ReentrantCallbackGroup
 import torch
 from florl.client.client import FlorlClient
 from florl.common import Knowledge
@@ -88,9 +89,7 @@ class FRLClient(TimerCallbackClient, FlorlClient):
             tuple[kitten.experience.Transition, kitten.experience.AuxiliaryMemoryData]: training batch
         """
         request = srv.SampleTransition.Request(n=n)
-        future = self.memory_client.call_async(request)
-        rclpy.spin_until_future_complete(self, future)
-        response = future.result()
+        response = self.memory_client.call(request)
         batch = [Transition.unpack(x) for x in response.batch]
         batch = [x.numpy() for x in batch]
         batch = kitten.experience.util.build_transition_from_list(batch)

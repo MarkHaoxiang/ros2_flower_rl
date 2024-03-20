@@ -139,9 +139,6 @@ class TimerCallbackClient(RosFlowerNode):
         # Send
         send(out_message)
         self.get_logger().info(
-            f"[RUN {out_message.metadata.run_id}, ROUND {out_message.metadata.group_id}]"
-        )
-        self.get_logger().info(
             f"Sent: {out_message.metadata.message_type} reply to message {message.metadata.message_id}"
         )
 
