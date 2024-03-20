@@ -26,7 +26,7 @@ def generate_launch_description():
             name="policy_provider",
             namespace=namespace
         )
-        _controller_node = Node(
+        controller_node = Node(
             package="toy_frl",
             executable="gym_controller",
             name="gym_controller",
@@ -35,28 +35,18 @@ def generate_launch_description():
             ],
             namespace=namespace
         )
-        controller_node = RegisterEventHandler(
-            event_handler=OnProcessStart(
-            target_action=policy_node,
-            on_start=OpaqueFunction(function=lambda _: [ _controller_node ])
-        ))
-        _train_node = Node(
+        train_node = Node(
             package="toy_frl",
             executable="dqn_client",
             name="flower_client",
             namespace=namespace
         )
-        train_node = RegisterEventHandler(
-            event_handler=OnProcessStart(
-            target_action=memory_node,
-            on_start=OpaqueFunction(function=lambda _: [ _train_node ])
-        ))
         memory_nodes.append(memory_node)
         policy_nodes.append(policy_node)
         controller_nodes.append(controller_node)
         train_nodes.append(train_node)
 
     return LaunchDescription([
-        memory_nodes, policy_nodes, controller_nodes, train_nodes
+        *memory_nodes, *policy_nodes, *controller_nodes, *train_nodes
     ])
 
