@@ -1,15 +1,13 @@
 # ruff: noqa: F401
 from __future__ import annotations
 
-from flwr.common import EvaluateIns, EvaluateRes, FitIns, FitRes, GetPropertiesIns, GetPropertiesRes
+from flwr.common import EvaluateIns, EvaluateRes, FitIns, FitRes, GetPropertiesIns, GetPropertiesRes, Config, GetParametersIns, GetParametersRes, Scalar
 import kitten
 import numpy as np
 import rclpy
-from rclpy.node import Node
 import torch
 from florl.client.client import FlorlClient
 from florl.common import Knowledge
-from flwr.common.typing import Config, GetParametersIns, GetParametersRes, Scalar
 from ml_interfaces import msg as msg
 from ml_interfaces import srv as srv
 from ml_interfaces_py import RosKnowledge, Transition
@@ -105,10 +103,10 @@ class FRLClient(TimerCallbackClient, FlorlClient):
         return res_batch, aux
     
     def fit(self, ins: FitIns) -> FitRes:
-        return FlorlClient.fit(self._proxy_client, ins)
+        return FlorlClient.fit(self._client_proxy, ins)
     
     def evaluate(self, ins: EvaluateIns) -> EvaluateRes:
-        return FlorlClient.evaluate(self._proxy_client, ins)
+        return FlorlClient.evaluate(self._client_proxy, ins)
     
     def flwr_get_parameters(self, ins: GetParametersIns) -> GetParametersRes:
         return FlorlClient.get_parameters(self, ins)

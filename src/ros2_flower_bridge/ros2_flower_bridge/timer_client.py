@@ -8,7 +8,7 @@ from flwr.common import GRPC_MAX_MESSAGE_LENGTH
 from flwr.common.retry_invoker import RetryInvoker, exponential
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup 
 
-from ros2_flower_bridge.interface import RosFlowerNode, RosFlowerClientProxy
+from .interface import RosFlowerNode
 
 class TimerCallbackClient(RosFlowerNode):
     def __init__(self, *args, server_addr: str = "[::]:8080", **kwargs):
@@ -31,9 +31,8 @@ class TimerCallbackClient(RosFlowerNode):
         max_retries: int | None = None,
         max_wait_time: float | None = None,
     ):
-        client = RosFlowerClientProxy(self)
-        _check_actionable_client(client, None)
-        client_fn = lambda _: client
+        _check_actionable_client(self._client_proxy, None)
+        client_fn = lambda _: self._client_proxy
 
         if insecure is None:
             insecure = root_certificates is None
@@ -78,6 +77,7 @@ class TimerCallbackClient(RosFlowerNode):
         load_client_app_fn: Callable[[], ClientApp],
     ):
         if _timer_running(self._train_timer) and not self._training_ended:        
+            self.get_logger().info("Client Manager callback not needed")
             return
 
         self.get_logger().info("Client Manager callback called")

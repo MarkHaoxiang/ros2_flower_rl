@@ -46,6 +46,7 @@ class RosFlowerNode(Node, fl.client.Client, ABC):
         ):
         Node.__init__(self, *args, **kwargs)
         fl.client.Client.__init__(self)
+        self._client_proxy = RosFlowerClientProxy(self)
         self._server_addr = server_addr
 
     def flwr_get_properties(self, ins: GetPropertiesIns) -> GetPropertiesRes:

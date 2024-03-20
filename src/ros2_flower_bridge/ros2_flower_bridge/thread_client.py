@@ -7,13 +7,12 @@ class DualThreadClient(RosFlowerNode):
     """ Runs start_client on a separate thread to avoid deadlocks
     """
     def start_client(self, **kwargs):
-        client_proxy = RosFlowerClientProxy(self)
         def _start_client():
             """ Starts looping client_proxy to communicate with the server
             """
             fl.client.start_client(
                 server_address=self._server_addr,
-                client=client_proxy,
+                client=self._client_proxy
                 **kwargs
             )
         Thread(target=_start_client, daemon=True).start()

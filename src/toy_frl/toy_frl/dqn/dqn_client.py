@@ -1,12 +1,7 @@
 # ruff: noqa: F401
 from florl.common import Knowledge
-import flwr as fl
-from flwr.common import FitIns, FitRes, GetParametersIns, GetParametersRes
 import kitten
-import numpy as np
-from florl.client.kitten.dqn import DQNKnowledge
 from flwr.common.typing import Config
-from gymnasium.spaces import Space
 import rclpy
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 
@@ -22,7 +17,7 @@ class DQNRosClient(FRLClient):
         algorithm: kitten.rl.Algorithm,
         policy: kitten.policy.Policy,
         knowledge: Knowledge,
-        config,
+        config: Config,
         server_addr: str = "[::]:8080",
         device: str = "cpu",
     ):
